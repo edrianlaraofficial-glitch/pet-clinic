@@ -30,6 +30,7 @@ RUN composer install \
     --no-interaction \
     --prefer-dist \
     --optimize-autoloader \
+    -vvv \
     && mkdir -p storage/framework/cache \
                 storage/framework/sessions \
                 storage/framework/views \
