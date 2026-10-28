@@ -26,6 +26,7 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
+
       - name: Run Laravel migrations
         env:
           APP_ENV: production
@@ -38,4 +39,5 @@ jobs:
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_SSLMODE: require
-        run: php artisan migrate --force
+        run: php artisan migrate --force -vvv
+
