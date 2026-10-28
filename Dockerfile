@@ -1,7 +1,7 @@
 FROM php:8.4-apache AS app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev libonig-dev libzip-dev libicu-dev \
+    libpq-dev libsqlite3-dev libonig-dev libzip-dev libicu-dev \
     && docker-php-ext-install \
        pdo_pgsql pdo_sqlite mbstring bcmath intl zip \
     && a2enmod rewrite \
