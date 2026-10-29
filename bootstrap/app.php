@@ -6,6 +6,7 @@ use App\Http\Middleware\SetSecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(
+            at: 'REMOTE_ADDR',
+            headers: Request::HEADER_X_FORWARDED_PROTO,
+        );
         $middleware->append(SetSecurityHeaders::class);
         $middleware->alias([
             'admin' => EnsureAdmin::class,

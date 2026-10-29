@@ -163,6 +163,11 @@ Required:
 | `QUEUE_CONNECTION=sync` | Avoids queuing work without a running worker |
 | `FILESYSTEM_DISK=public` | Stores gallery images on the public disk |
 
+The HTTP middleware trusts only the immediate proxy (`REMOTE_ADDR`) for
+`X-Forwarded-Proto`, which Render uses when terminating HTTPS. It does not trust
+forwarded host or client-IP headers, so generated asset URLs use HTTPS without
+accepting a client-supplied hostname.
+
 For email verification and password resets, configure a real mail provider in
 Render (`MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
 `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`, and `MAIL_FROM_NAME`).

@@ -46,4 +46,34 @@ class SecurityHeadersTest extends TestCase
             ->assertOk()
             ->assertHeader('Strict-Transport-Security', 'max-age=31536000');
     }
+
+    public function test_asset_urls_use_the_forwarded_https_scheme_without_trusting_forwarded_host(): void
+    {
+        $response = $this->withServerVariables([
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTP_X_FORWARDED_HOST' => 'untrusted.example',
+        ])->get('http://clinic.test/privacy-policy');
+
+        $response
+            ->assertOk()
+            ->assertSee('href="https://clinic.test/build/assets/app-', false)
+            ->assertSee('href="https://clinic.test/css/app.css"', false)
+            ->assertSee('href="https://clinic.test/favicon.png"', false)
+            ->assertSee('src="https://clinic.test/js/app.js"', false)
+            ->assertDontSee('href="http://clinic.test/build/assets/app-', false)
+            ->assertDontSee('http://clinic.test/css/app.css', false)
+            ->assertDontSee('untrusted.example', false);
+    }
+
+    public function test_asset_urls_preserve_http_for_local_requests_without_forwarded_scheme(): void
+    {
+        $response = $this->get('http://clinic.test/privacy-policy');
+
+        $response
+            ->assertOk()
+            ->assertSee('href="http://clinic.test/css/app.css"', false)
+            ->assertSee('href="http://clinic.test/favicon.png"', false)
+            ->assertSee('src="http://clinic.test/js/app.js"', false);
+    }
 }
