@@ -2115,3 +2115,147 @@ html.has-scroll-reveal [data-scroll-reveal].is-visible { opacity: 1; transform: 
 @media (prefers-reduced-motion: reduce) {
   html.has-scroll-reveal [data-scroll-reveal] { opacity: 1; transform: none; transition: none; }
 }
+
+/* Public navigation */
+.site-header .container { flex-wrap: nowrap; position: relative; }
+.nav-collapsible { flex: 1; justify-content: flex-end; flex-wrap: nowrap; gap: clamp(.5rem, 1.5vw, 1.5rem); }
+.nav-links { display: flex; align-items: center; gap: .15rem; }
+.nav-links a {
+  position: relative;
+  padding: .6rem .8rem;
+  border-radius: .75rem;
+  color: var(--ink);
+  font-size: .94rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.nav-links a:hover,
+.nav-links a.active { background: transparent; color: var(--teal-deep); text-decoration: none; }
+.nav-links a.active::after {
+  position: absolute;
+  right: .8rem;
+  bottom: .28rem;
+  left: .8rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--teal);
+  content: "";
+}
+.nav-menu-toggle { display: none; }
+.nav-actions { gap: .75rem; }
+.nav-account { position: relative; }
+.nav-account > summary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: .55rem;
+  padding: .25rem .4rem .25rem .3rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+.nav-account > summary::-webkit-details-marker { display: none; }
+.nav-account > summary:hover,
+.nav-account[open] > summary { border-color: var(--border); background: var(--surface); }
+.nav-account-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--teal) 35%, var(--border));
+  border-radius: 50%;
+  background: var(--teal-soft);
+  color: var(--teal-deep);
+  font-size: .9rem;
+  font-weight: 900;
+}
+.nav-account-name { max-width: 11rem; overflow: hidden; font-size: .85rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.nav-account > summary svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.nav-account-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + .55rem);
+  right: 0;
+  display: grid;
+  width: min(17rem, calc(100vw - 2rem));
+  gap: .2rem;
+  padding: .65rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: 0 18px 45px -22px rgba(20, 40, 35, .32);
+}
+.nav-account-heading { overflow: hidden; margin: 0 0 .25rem; padding: .55rem .65rem .75rem; border-bottom: 1px solid var(--border); color: var(--ink); font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.nav-account-menu > a,
+.nav-account-menu > form button {
+  display: block;
+  width: 100%;
+  padding: .65rem;
+  border: 0;
+  border-radius: .65rem;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  text-align: left;
+}
+.nav-account-menu > a:hover,
+.nav-account-menu > form button:hover { background: var(--cream-deep); color: var(--teal-deep); text-decoration: none; }
+.nav-account-menu > form { margin: .25rem 0 0; padding-top: .25rem; border-top: 1px solid var(--border); }
+.nav-account-menu > form button { cursor: pointer; }
+.nav-account-menu > form button:hover { color: var(--coral-deep); }
+
+@media (max-width: 900px) {
+  .nav-collapsible { gap: .5rem; }
+  .nav-links a { padding-inline: .55rem; font-size: .88rem; }
+  .nav-account-name { display: none; }
+}
+
+@media (max-width: 760px) {
+  .site-header .container { flex-wrap: wrap; align-items: center; }
+  .nav-menu-toggle {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    place-items: center;
+    padding: .55rem;
+    border: 1px solid var(--border);
+    border-radius: .8rem;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .nav-menu-toggle:hover { border-color: var(--teal); color: var(--teal-deep); }
+  .nav-menu-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.8; }
+  .nav-collapsible {
+    width: 100%;
+    flex: 0 0 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: .65rem;
+    padding: .8rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--surface);
+    box-shadow: 0 16px 35px -28px rgba(20, 40, 35, .42);
+  }
+  .nav-ready .nav-collapsible:not(.is-open) { display: none; }
+  .nav-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem; }
+  .nav-links a { padding: .7rem .75rem; }
+  .nav-links a.active::after { right: .75rem; bottom: .35rem; left: .75rem; }
+  .nav-actions { width: 100%; justify-content: space-between; gap: .65rem; padding-top: .6rem; border-top: 1px solid var(--border); }
+  .nav-actions .nav-book-visit { flex: 1; }
+  .nav-account { margin-left: auto; }
+  .nav-account-name { display: inline; }
+  .nav-account-menu { right: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-menu-toggle,
+  .nav-account-menu { transition: border-color .18s ease, box-shadow .18s ease; }
+}

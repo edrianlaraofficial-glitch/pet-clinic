@@ -77,6 +77,53 @@
         }
     }
 
+    const navigationToggle = document.querySelector('.nav-menu-toggle');
+    const publicNavigation = document.querySelector('#public-navigation');
+
+    if (navigationToggle && publicNavigation) {
+        document.body.classList.add('nav-ready');
+
+        const closeNavigation = () => {
+            publicNavigation.classList.remove('is-open');
+            navigationToggle.setAttribute('aria-expanded', 'false');
+            navigationToggle.setAttribute('aria-label', 'Open navigation menu');
+        };
+
+        navigationToggle.addEventListener('click', () => {
+            const isOpen = publicNavigation.classList.toggle('is-open');
+            navigationToggle.setAttribute('aria-expanded', String(isOpen));
+            navigationToggle.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+        });
+
+        publicNavigation.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', closeNavigation);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (! publicNavigation.contains(event.target) && ! navigationToggle.contains(event.target)) {
+                closeNavigation();
+            }
+
+            publicNavigation.querySelectorAll('.nav-account[open]').forEach((accountMenu) => {
+                if (! accountMenu.contains(event.target)) {
+                    accountMenu.removeAttribute('open');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                const wasNavigationOpen = publicNavigation.classList.contains('is-open');
+                closeNavigation();
+                publicNavigation.querySelector('.nav-account[open]')?.removeAttribute('open');
+
+                if (wasNavigationOpen) {
+                    navigationToggle.focus();
+                }
+            }
+        });
+    }
+
     const revealItems = document.querySelectorAll('[data-scroll-reveal]');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

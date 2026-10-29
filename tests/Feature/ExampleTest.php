@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Service;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -57,9 +58,11 @@ class ExampleTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
+            ->assertSee('href="'.route('home').'#services"', false)
             ->assertSee('href="'.route('home').'#about"', false)
             ->assertSee('href="'.route('home').'#gallery"', false)
             ->assertSee('href="'.route('home').'#ratings"', false)
+            ->assertSee('aria-controls="public-navigation"', false)
             ->assertDontSee('href="'.route('home').'#contact"', false)
             ->assertSee('id="about"', false)
             ->assertSee('id="gallery"', false)
@@ -67,6 +70,27 @@ class ExampleTest extends TestCase
             ->assertDontSee('href="/ratings"', false)
             ->assertSee('id="contact"', false)
             ->assertSee('Photos of our clinic and its lovely visitors will be here soon.');
+    }
+
+    public function test_signed_in_customer_navigation_shows_account_menu_and_booking_link(): void
+    {
+        $customer = User::query()->create([
+            'name' => 'Taylor Pet Parent',
+            'email' => 'taylor-navigation@example.test',
+            'password' => 'correct-horse-battery',
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($customer)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('Book a visit')
+            ->assertSee('Open account menu for Taylor Pet Parent')
+            ->assertSee('My dogs')
+            ->assertSee('My bookings')
+            ->assertSee('Sign out')
+            ->assertSee('action="'.route('logout').'"', false)
+            ->assertDontSee('Sign in');
     }
 
     public function test_ratings_are_not_a_separate_page(): void

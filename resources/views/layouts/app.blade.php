@@ -20,28 +20,48 @@
                 <span class="brand-copy">Wade-County<small>Animal Clinic</small></span>
             </a>
 
-            <nav class="nav" aria-label="Main">
-                <a href="{{ route('home') }}" data-public-nav="home" class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>
-                <a href="{{ route('home') }}#about" data-public-nav="about">About</a>
-                <a href="{{ route('home') }}#gallery" data-public-nav="gallery">Gallery</a>
-                <a href="{{ route('home') }}#ratings" data-public-nav="ratings">Ratings</a>
+            <button
+                type="button"
+                class="nav-menu-toggle"
+                aria-controls="public-navigation"
+                aria-expanded="false"
+                aria-label="Open navigation menu">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16M4 12h16M4 17h16"/>
+                </svg>
+            </button>
+
+            <nav class="nav nav-collapsible" id="public-navigation" aria-label="Main">
+                <div class="nav-links">
+                    <a href="{{ route('home') }}#services" data-public-nav="services">Services</a>
+                    <a href="{{ route('home') }}#about" data-public-nav="about">About</a>
+                    <a href="{{ route('home') }}#gallery" data-public-nav="gallery">Gallery</a>
+                    <a href="{{ route('home') }}#ratings" data-public-nav="ratings">Ratings</a>
+                </div>
+                <div class="nav-actions">
                 @auth
-                    <a href="{{ route('my-bookings') }}" class="{{ request()->routeIs('my-bookings', 'appointments.*') ? 'active' : '' }}">My bookings</a>
-                    <a href="{{ route('pets.index') }}" class="{{ request()->routeIs('pets.*') ? 'active' : '' }}">My dogs</a>
-                    <span class="small muted">{{ auth()->user()->name }}</span>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button class="btn btn-ghost btn-sm" type="submit">Sign out</button>
-                    </form>
-                    <div class="nav-actions">
-                        <a href="{{ route('booking.create') }}" class="btn btn-primary nav-book-visit">Book a visit</a>
-                    </div>
+                    <a href="{{ route('booking.create') }}" class="btn btn-primary nav-book-visit">Book a visit</a>
+                    <details class="nav-account">
+                        <summary aria-label="Open account menu for {{ auth()->user()->name }}">
+                            <span class="nav-account-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
+                            <span class="nav-account-name">{{ auth()->user()->name }}</span>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5"/></svg>
+                        </summary>
+                        <div class="nav-account-menu">
+                            <p class="nav-account-heading">{{ auth()->user()->name }}</p>
+                            <a href="{{ route('pets.index') }}" class="{{ request()->routeIs('pets.*') ? 'active' : '' }}">My dogs</a>
+                            <a href="{{ route('my-bookings') }}" class="{{ request()->routeIs('my-bookings', 'appointments.*') ? 'active' : '' }}">My bookings</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit">Sign out</button>
+                            </form>
+                        </div>
+                    </details>
                 @else
-                    <div class="nav-actions">
-                        <a href="{{ route('login') }}" class="btn btn-primary nav-book-visit">Book a visit</a>
-                        <a href="{{ route('login') }}" class="nav-sign-in">Sign in</a>
-                    </div>
+                    <a href="{{ route('login') }}" class="btn btn-primary nav-book-visit">Book a visit</a>
+                    <a href="{{ route('login') }}" class="nav-sign-in">Sign in</a>
                 @endauth
+                </div>
             </nav>
         </div>
     </header>
