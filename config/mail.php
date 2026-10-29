@@ -1,4 +1,3 @@
-```php
 <?php
 
 return [
@@ -34,4 +33,3 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Wade-County Animal Clinic'),
     ],
 ];
-```
