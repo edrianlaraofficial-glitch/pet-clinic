@@ -127,7 +127,7 @@ class AuthController extends Controller
 
         if (! $this->sendVerificationNotification($user)) {
             return to_route('verification.notice', ['email' => $user->email])
-                ->withErrors(['email' => 'We could not send your verification email. Check the email settings and try again.']);
+                ->withErrors(['email' => 'We could not send your verification email. Please try again later or contact the clinic.']);
         }
 
         return to_route('verification.notice', ['email' => $user->email])
@@ -168,7 +168,7 @@ class AuthController extends Controller
         if ($user && ! $user->isAdmin() && ! $user->hasVerifiedEmail() && ! $this->sendVerificationNotification($user)) {
             return back()
                 ->withInput()
-                ->withErrors(['email' => 'We could not send your verification email. Check the email settings and try again.']);
+                ->withErrors(['email' => 'We could not send your verification email. Please try again later or contact the clinic.']);
         }
 
         return back()->with('status', 'If an unverified customer account exists for that address, a verification email has been sent.');

@@ -132,12 +132,12 @@ class ClinicWorkflowTest extends TestCase
         Notification::assertSentTo($customer, VerifyEmail::class);
     }
 
-    public function test_registration_keeps_unverified_account_and_reports_smtp_delivery_failure(): void
+    public function test_registration_keeps_unverified_account_and_reports_mail_delivery_failure(): void
     {
         $this->mock(Dispatcher::class)
             ->shouldReceive('send')
             ->once()
-            ->andThrow(new TransportException('SMTP unavailable'));
+            ->andThrow(new TransportException('Mail API unavailable'));
 
         $this->post(route('auth.register'), [
             'name' => 'Sam Rivera',
@@ -148,7 +148,7 @@ class ClinicWorkflowTest extends TestCase
         ])
             ->assertRedirect(route('verification.notice', ['email' => 'delivery-failure@example.test']))
             ->assertSessionHasErrors([
-                'email' => 'We could not send your verification email. Check the email settings and try again.',
+                'email' => 'We could not send your verification email. Please try again later or contact the clinic.',
             ]);
 
         $this->assertDatabaseHas('users', [

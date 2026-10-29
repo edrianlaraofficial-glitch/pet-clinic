@@ -45,10 +45,10 @@ application. The welcome view also uses Vite.
 
 ## Accounts and authorization
 
-Customer registration never accepts a role and does not require email
-verification. Admin routes use a separate guard and check the admin role on the
-server. Ordinary users cannot grant themselves admin access by editing a form
-or request.
+Customer registration never accepts a role and requires email verification.
+Admin routes use a separate guard and check the admin role on the server.
+Ordinary users cannot grant themselves admin access by editing a form or
+request.
 
 To securely create the first administrator without Render Shell access:
 
@@ -195,33 +195,36 @@ Laravel's signed verification links. Set `APP_URL` to the canonical HTTPS URL of
 the Render service so generated links point to the deployed website. For the
 current Render hostname, set `APP_URL=https://pet-clinic-f1v4.onrender.com`.
 
-### Gmail SMTP email delivery
+### Email delivery through Resend
 
-For local development, set these values in the ignored local `.env` file. Add
-the same names as protected environment variables in Render:
+Render Free web services block outbound SMTP ports 25, 465, and 587. Use
+Resend's HTTPS API transport instead. Create a Resend account, add and verify a
+domain you control by publishing the DNS records Resend provides, and create
+an API key. For a limited setup check, Resend's `onboarding@resend.dev` sender
+can only deliver to the email address associated with your Resend account.
+
+Set these values in the ignored local `.env` file and as protected environment
+variables in Render:
 
 ```dotenv
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your-clinic-gmail-address@gmail.com
-MAIL_PASSWORD=your-google-app-password
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=your-clinic-gmail-address@gmail.com
+MAIL_MAILER=resend
+RESEND_API_KEY=re_your_resend_api_key
+MAIL_FROM_ADDRESS=hello@your-verified-domain.com
 MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-In Google Account security settings, enable 2-Step Verification, then create an
-App Password for the clinic mail account at
-<https://myaccount.google.com/apppasswords>. Put that App Password in
-`MAIL_PASSWORD`, not the regular Gmail password. Store it only in local `.env`
-or Render's environment/secret settings; never commit it or expose it in
-frontend variables. `MAIL_FROM_ADDRESS` should be the Gmail account used for
-SMTP (or a sender alias authorized by that account). The `.env.example` file
-contains empty placeholders, not real credentials.
+Set Render's `APP_URL` to the canonical HTTPS URL of the deployed app so signed
+verification links use the production host. Keep `RESEND_API_KEY` only in
+local `.env` or Render's secret settings; never commit it or expose it in
+frontend variables. Replace the example sender with an address on the domain
+you verified with Resend. For a first test before domain verification, you can
+use `MAIL_FROM_ADDRESS=onboarding@resend.dev`, but Resend restricts that sender
+to recipients on your own Resend account.
 
-If delivery fails, the customer account is retained but remains unverified; the
-verification screen reports the delivery problem and allows another request.
+The application sends email synchronously through Resend. If delivery fails,
+the customer account remains saved and unverified; the verification page shows
+an error and allows the customer to retry. Check the Laravel/Render logs and
+Resend email logs if an API request is rejected.
 
 ### Uploaded gallery images
 

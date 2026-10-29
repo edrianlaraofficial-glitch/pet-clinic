@@ -13,7 +13,6 @@
             <div class="field">
                 <label for="verification-email">Email address</label>
                 <input id="verification-email" type="email" name="email" value="{{ old('email', $email) }}" autocomplete="email" required>
-                @error('email') <span class="field-error">{{ $message }}</span> @enderror
             </div>
             <div class="row">
                 <button class="btn btn-primary" type="submit">Resend confirmation email</button>

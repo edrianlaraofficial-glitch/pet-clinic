@@ -13,6 +13,10 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
         ],
+        'resend' => [
+            'transport' => 'resend',
+            'key' => env('RESEND_API_KEY'),
+        ],
         'log' => [
             'transport' => 'log',
             'channel' => env('MAIL_LOG_CHANNEL'),
