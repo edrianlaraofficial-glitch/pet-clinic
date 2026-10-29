@@ -195,36 +195,43 @@ Laravel's signed verification links. Set `APP_URL` to the canonical HTTPS URL of
 the Render service so generated links point to the deployed website. For the
 current Render hostname, set `APP_URL=https://pet-clinic-f1v4.onrender.com`.
 
-### Email delivery through Resend
+### Email delivery through Gmail SMTP
 
-Render Free web services block outbound SMTP ports 25, 465, and 587. Use
-Resend's HTTPS API transport instead. Create a Resend account, add and verify a
-domain you control by publishing the DNS records Resend provides, and create
-an API key. For a limited setup check, Resend's `onboarding@resend.dev` sender
-can only deliver to the email address associated with your Resend account.
-
-Set these values in the ignored local `.env` file and as protected environment
-variables in Render:
+Configure Gmail SMTP in the ignored local `.env` file and as protected
+environment variables in Render:
 
 ```dotenv
-MAIL_MAILER=resend
-RESEND_API_KEY=re_your_resend_api_key
-MAIL_FROM_ADDRESS=hello@your-verified-domain.com
-MAIL_FROM_NAME="${APP_NAME}"
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-gmail-address
+MAIL_PASSWORD=your-google-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=your-gmail-address
+MAIL_FROM_NAME="Wade-County Animal Clinic"
 ```
 
-Set Render's `APP_URL` to the canonical HTTPS URL of the deployed app so signed
-verification links use the production host. Keep `RESEND_API_KEY` only in
-local `.env` or Render's secret settings; never commit it or expose it in
-frontend variables. Replace the example sender with an address on the domain
-you verified with Resend. For a first test before domain verification, you can
-use `MAIL_FROM_ADDRESS=onboarding@resend.dev`, but Resend restricts that sender
-to recipients on your own Resend account.
+Enable 2-Step Verification on the Google account, then create an App Password
+from the Google Account security settings. Use the App Password for
+`MAIL_PASSWORD`, not the account password. Keep it only in local `.env` or
+Render's protected environment settings; never commit it or expose it in
+frontend variables. Use the same Gmail address for `MAIL_USERNAME` and
+`MAIL_FROM_ADDRESS`.
 
-The application sends email synchronously through Resend. If delivery fails,
-the customer account remains saved and unverified; the verification page shows
-an error and allows the customer to retry. Check the Laravel/Render logs and
-Resend email logs if an API request is rejected.
+Render Free web services block outbound SMTP ports 25, 465, and 587. Gmail SMTP
+therefore cannot deliver from a Free service. Confirm the Render service plan
+allows outbound SMTP before using these settings; otherwise choose an HTTPS
+email provider or a hosting plan that permits SMTP. Gmail variables alone do
+not select the transport, so `MAIL_MAILER=smtp` is required.
+
+Set Render's `APP_URL` to the canonical HTTPS URL of the deployed app so signed
+verification links use the production host. The application sends verification
+notifications synchronously, so a queue worker is not needed. If delivery
+fails, the account remains saved and unverified, the page allows a retry, and
+the application logs the sanitized transport exception class/message and
+non-secret SMTP connection settings. Check the Render runtime logs for that
+diagnostic; credentials, recipient addresses, and verification URLs are not
+logged.
 
 ### Uploaded gallery images
 

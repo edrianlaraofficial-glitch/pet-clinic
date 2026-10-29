@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -188,11 +189,42 @@ class AuthController extends Controller
         try {
             $user->sendEmailVerificationNotification();
         } catch (TransportExceptionInterface $exception) {
-            report($exception);
+            $mailer = (string) config('mail.default');
+            $mailerConfig = config("mail.mailers.{$mailer}", []);
+
+            Log::error('Verification email delivery failed.', [
+                'exception_class' => $exception::class,
+                'mailer' => $mailer,
+                'host' => $mailerConfig['host'] ?? null,
+                'port' => $mailerConfig['port'] ?? null,
+                'encryption' => $mailerConfig['encryption'] ?? null,
+                'message' => $this->sanitizeMailError($exception->getMessage()),
+            ]);
 
             return false;
         }
 
         return true;
+    }
+
+    private function sanitizeMailError(string $message): string
+    {
+        $sensitiveValues = [
+            config('mail.mailers.smtp.username'),
+            config('mail.mailers.smtp.password'),
+        ];
+
+        foreach ($sensitiveValues as $sensitiveValue) {
+            if (is_string($sensitiveValue) && $sensitiveValue !== '') {
+                $message = str_replace($sensitiveValue, '[REDACTED]', $message);
+            }
+        }
+
+        $message = preg_replace('/https?:\/\/[^\s<>"\']+/i', '[URL REDACTED]', $message) ?? '[Mail error redacted]';
+        $message = preg_replace('/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/', '[EMAIL REDACTED]', $message) ?? '[Mail error redacted]';
+        $message = preg_replace('/\b[A-Za-z0-9+\/_=-]{24,}\b/', '[TOKEN REDACTED]', $message) ?? '[Mail error redacted]';
+        $message = preg_replace('/[\r\n\t]+/', ' ', $message) ?? '[Mail error redacted]';
+
+        return substr($message, 0, 500);
     }
 }

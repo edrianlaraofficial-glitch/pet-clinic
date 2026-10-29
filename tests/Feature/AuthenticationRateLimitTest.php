@@ -5,8 +5,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Mail\Transport\ResendTransport;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -14,14 +12,12 @@ class AuthenticationRateLimitTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_resend_mailer_uses_laravels_resend_transport(): void
+    public function test_gmail_smtp_configuration_uses_tls_and_the_clinic_sender_name(): void
     {
-        config(['services.resend.key' => 're_test_key']);
-
-        $this->assertInstanceOf(
-            ResendTransport::class,
-            Mail::mailer('resend')->getSymfonyTransport(),
-        );
+        $this->assertSame('smtp.gmail.com', config('mail.mailers.smtp.host'));
+        $this->assertSame(587, config('mail.mailers.smtp.port'));
+        $this->assertSame('tls', config('mail.mailers.smtp.encryption'));
+        $this->assertSame('Wade-County Animal Clinic', config('mail.from.name'));
     }
 
     public function test_repeated_customer_login_attempts_are_throttled(): void

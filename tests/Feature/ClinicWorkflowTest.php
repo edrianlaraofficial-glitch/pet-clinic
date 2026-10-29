@@ -14,6 +14,7 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Notifications\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -134,10 +135,37 @@ class ClinicWorkflowTest extends TestCase
 
     public function test_registration_keeps_unverified_account_and_reports_mail_delivery_failure(): void
     {
+        config([
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.host' => 'smtp.gmail.com',
+            'mail.mailers.smtp.port' => 587,
+            'mail.mailers.smtp.encryption' => 'tls',
+            'mail.mailers.smtp.username' => 'clinic@gmail.test',
+            'mail.mailers.smtp.password' => 'test-app-password',
+        ]);
+        Log::shouldReceive('error')
+            ->once()
+            ->withArgs(static function (string $message, array $context): bool {
+                $loggedContext = json_encode($context, JSON_THROW_ON_ERROR);
+
+                return $message === 'Verification email delivery failed.'
+                    && $context['exception_class'] === TransportException::class
+                    && $context['mailer'] === 'smtp'
+                    && $context['host'] === 'smtp.gmail.com'
+                    && $context['port'] === 587
+                    && $context['encryption'] === 'tls'
+                    && substr_count($context['message'], '[REDACTED]') >= 2
+                    && str_contains($context['message'], '[URL REDACTED]')
+                    && ! str_contains($loggedContext, 'clinic@gmail.test')
+                    && ! str_contains($loggedContext, 'test-app-password')
+                    && ! str_contains($loggedContext, 'signed-token-secret');
+            });
         $this->mock(Dispatcher::class)
             ->shouldReceive('send')
             ->once()
-            ->andThrow(new TransportException('Mail API unavailable'));
+            ->andThrow(new TransportException(
+                'SMTP authentication failed for clinic@gmail.test using test-app-password. https://example.test/email/verify/1/signed-token-secret',
+            ));
 
         $this->post(route('auth.register'), [
             'name' => 'Sam Rivera',
@@ -156,6 +184,24 @@ class ClinicWorkflowTest extends TestCase
             'email_verified_at' => null,
         ]);
         $this->assertGuest('web');
+    }
+
+    public function test_resend_reports_a_clear_error_when_mail_transport_fails(): void
+    {
+        $customer = $this->customer('resend-failure@example.test', false);
+        $this->mock(Dispatcher::class)
+            ->shouldReceive('send')
+            ->once()
+            ->andThrow(new TransportException('SMTP connection failed'));
+
+        $this->from(route('verification.notice', ['email' => $customer->email]))
+            ->post(route('verification.send'), ['email' => $customer->email])
+            ->assertRedirect(route('verification.notice', ['email' => $customer->email]))
+            ->assertSessionHasErrors([
+                'email' => 'We could not send your verification email. Please try again later or contact the clinic.',
+            ]);
+
+        $this->assertNull($customer->fresh()->email_verified_at);
     }
 
     public function test_invalid_signed_customer_verification_link_does_not_verify_email(): void
@@ -180,12 +226,17 @@ class ClinicWorkflowTest extends TestCase
         Notification::fake();
         $admin = $this->customer('verification-admin@example.test', false);
         $admin->grantRole(UserRole::ADMIN);
+        $verifiedCustomer = $this->customer('verification-already-done@example.test');
 
         $this->post(route('verification.send'), ['email' => 'unknown-verification@example.test'])
             ->assertRedirect()
             ->assertSessionHas('status', 'If an unverified customer account exists for that address, a verification email has been sent.');
 
         $this->post(route('verification.send'), ['email' => $admin->email])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'If an unverified customer account exists for that address, a verification email has been sent.');
+
+        $this->post(route('verification.send'), ['email' => $verifiedCustomer->email])
             ->assertRedirect()
             ->assertSessionHas('status', 'If an unverified customer account exists for that address, a verification email has been sent.');
 
