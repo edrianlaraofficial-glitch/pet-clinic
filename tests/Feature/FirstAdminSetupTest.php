@@ -23,29 +23,41 @@ class FirstAdminSetupTest extends TestCase
         config(['app.admin_setup_key' => self::SETUP_KEY]);
     }
 
-    public function test_setup_page_shows_welcome_only_when_enabled_and_no_admin_exists(): void
+    public function test_admin_login_shows_first_account_form_only_when_setup_is_available(): void
     {
-        $this->get(route('admin.setup'))
+        $this->get(route('admin.login'))
             ->assertOk()
-            ->assertSee('Welcome, Admin! Create your first administrator account to get started.')
-            ->assertSee('name="setup_key"', false);
+            ->assertSee('Welcome, Admin! Get started by creating your first administrator account.')
+            ->assertSee('name="name"', false)
+            ->assertSee('name="email"', false)
+            ->assertSee('name="password_confirmation"', false)
+            ->assertSee('Create Your First Account');
 
         $admin = $this->createUser('existing-admin@example.test');
         $admin->grantRole(UserRole::ADMIN);
 
-        $this->get(route('admin.setup'))->assertNotFound();
+        $this->get(route('admin.login'))
+            ->assertOk()
+            ->assertSee('Admin sign in')
+            ->assertSee('Sign in securely')
+            ->assertDontSee('Create Your First Account');
+
+        $this->get('/admin/setup')->assertNotFound();
     }
 
     public function test_setup_page_is_unavailable_without_a_configured_secret(): void
     {
         config(['app.admin_setup_key' => null]);
 
-        $this->get(route('admin.setup'))->assertNotFound();
+        $this->get(route('admin.login'))
+            ->assertOk()
+            ->assertSee('Admin sign in')
+            ->assertDontSee('Create Your First Account');
     }
 
     public function test_valid_setup_creates_and_signs_in_the_first_admin(): void
     {
-        $response = $this->post(route('admin.setup.store'), [
+        $response = $this->post(route('admin.login.store'), [
             'name' => 'First Admin',
             'email' => 'first-admin@example.test',
             'password' => 'first-admin-password-123',
@@ -65,11 +77,18 @@ class FirstAdminSetupTest extends TestCase
             'full_name' => 'First Admin',
         ]);
         $this->assertNotNull(DB::table('admin_setup_statuses')->value('completed_at'));
+
+        $this->post(route('admin.logout'))->assertRedirect(route('admin.login'));
+        $this->get(route('admin.login'))
+            ->assertOk()
+            ->assertSee('Admin sign in')
+            ->assertSee('Sign in securely')
+            ->assertDontSee('Create Your First Account');
     }
 
     public function test_setup_rejects_an_incorrect_secret_without_creating_an_admin(): void
     {
-        $this->post(route('admin.setup.store'), [
+        $this->post(route('admin.login.store'), [
             'name' => 'Attacker',
             'email' => 'attacker@example.test',
             'password' => 'attacker-password-123',
@@ -83,7 +102,7 @@ class FirstAdminSetupTest extends TestCase
 
     public function test_setup_key_in_the_url_is_not_accepted(): void
     {
-        $this->post(route('admin.setup.store', ['setup_key' => self::SETUP_KEY]), [
+        $this->from(route('admin.login'))->post(route('admin.login.store', ['setup_key' => self::SETUP_KEY]), [
             'name' => 'Attacker',
             'email' => 'attacker@example.test',
             'password' => 'attacker-password-123',
@@ -97,15 +116,15 @@ class FirstAdminSetupTest extends TestCase
     {
         $customer = $this->createUser('customer@example.test');
 
-        $this->from(route('admin.setup'))
-            ->post(route('admin.setup.store'), [
+        $this->from(route('admin.login'))
+            ->post(route('admin.login.store'), [
                 'name' => 'Customer',
                 'email' => $customer->email,
                 'password' => 'customer-password-123',
                 'password_confirmation' => 'customer-password-123',
                 'setup_key' => self::SETUP_KEY,
             ])
-            ->assertRedirect(route('admin.setup'))
+            ->assertRedirect(route('admin.login'))
             ->assertSessionHasErrors('email');
 
         $this->assertFalse($customer->fresh()->isAdmin());
@@ -114,15 +133,15 @@ class FirstAdminSetupTest extends TestCase
 
     public function test_setup_validates_required_fields_and_password_confirmation(): void
     {
-        $this->from(route('admin.setup'))
-            ->post(route('admin.setup.store'), [
+        $this->from(route('admin.login'))
+            ->post(route('admin.login.store'), [
                 'setup_key' => self::SETUP_KEY,
                 'name' => 'First Admin',
                 'email' => 'first-admin@example.test',
                 'password' => 'short',
                 'password_confirmation' => 'different',
             ])
-            ->assertRedirect(route('admin.setup'))
+            ->assertRedirect(route('admin.login'))
             ->assertSessionHasErrors(['password']);
 
         $this->assertDatabaseCount('users', 0);
@@ -130,9 +149,9 @@ class FirstAdminSetupTest extends TestCase
 
     public function test_setup_requires_name_email_and_password(): void
     {
-        $this->from(route('admin.setup'))
-            ->post(route('admin.setup.store'), ['setup_key' => self::SETUP_KEY])
-            ->assertRedirect(route('admin.setup'))
+        $this->from(route('admin.login'))
+            ->post(route('admin.login.store'), ['setup_key' => self::SETUP_KEY])
+            ->assertRedirect(route('admin.login'))
             ->assertSessionHasErrors(['name', 'email', 'password']);
 
         $this->assertDatabaseCount('users', 0);
@@ -143,15 +162,15 @@ class FirstAdminSetupTest extends TestCase
         $lock = Cache::store('database')->lock('first-admin-setup', 30);
         $this->assertTrue($lock->get());
 
-        $this->from(route('admin.setup'))
-            ->post(route('admin.setup.store'), [
+        $this->from(route('admin.login'))
+            ->post(route('admin.login.store'), [
                 'name' => 'First Admin',
                 'email' => 'first-admin@example.test',
                 'password' => 'first-admin-password-123',
                 'password_confirmation' => 'first-admin-password-123',
                 'setup_key' => self::SETUP_KEY,
             ])
-            ->assertRedirect(route('admin.setup'))
+            ->assertRedirect(route('admin.login'))
             ->assertSessionHasErrors('setup');
 
         $lock->release();
@@ -161,7 +180,7 @@ class FirstAdminSetupTest extends TestCase
 
     public function test_setup_remains_closed_after_the_first_admin_role_is_removed(): void
     {
-        $this->post(route('admin.setup.store'), [
+        $this->post(route('admin.login.store'), [
             'name' => 'First Admin',
             'email' => 'first-admin@example.test',
             'password' => 'first-admin-password-123',
@@ -172,8 +191,11 @@ class FirstAdminSetupTest extends TestCase
         $admin = User::query()->where('email', 'first-admin@example.test')->firstOrFail();
         $admin->roles()->delete();
 
-        $this->get(route('admin.setup'))->assertNotFound();
-        $this->post(route('admin.setup.store'), [
+        $this->get(route('admin.login'))
+            ->assertOk()
+            ->assertSee('Admin sign in')
+            ->assertDontSee('Create Your First Account');
+        $this->post(route('admin.login.store'), [
             'name' => 'Second Admin',
             'email' => 'second-admin@example.test',
             'password' => 'second-admin-password-123',

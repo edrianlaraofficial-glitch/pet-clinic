@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\AuthController as AdminAuth;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomers;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
-use App\Http\Controllers\Admin\FirstAdminSetupController;
 use App\Http\Controllers\Admin\GalleryImageController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettings;
 use App\Http\Controllers\AppointmentController;
@@ -76,10 +75,6 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/setup', [FirstAdminSetupController::class, 'show'])->name('setup');
-    Route::post('/setup', [FirstAdminSetupController::class, 'store'])
-        ->middleware('throttle:5,1')
-        ->name('setup.store');
     Route::get('/login', [AdminAuth::class, 'show'])->name('login');
     Route::post('/login', [AdminAuth::class, 'store'])->middleware('throttle:6,1')->name('login.store');
     Route::get('/email/verify/{id}/{hash}', [AdminSettings::class, 'verifyEmail'])

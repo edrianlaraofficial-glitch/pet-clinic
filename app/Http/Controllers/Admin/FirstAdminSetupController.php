@@ -13,19 +13,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 use RuntimeException;
 
 class FirstAdminSetupController extends Controller
 {
     private const LOCK_KEY = 'first-admin-setup';
-
-    public function show(): View
-    {
-        abort_unless($this->isSetupAvailable(), 404);
-
-        return view('admin.auth.setup');
-    }
 
     public function store(Request $request): RedirectResponse
     {
@@ -107,7 +99,7 @@ class FirstAdminSetupController extends Controller
             ->with('status', 'Your administrator account is ready.');
     }
 
-    private function isSetupAvailable(): bool
+    public function isSetupAvailable(): bool
     {
         $setupKey = config('app.admin_setup_key');
 

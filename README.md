@@ -60,11 +60,13 @@ To securely create the first administrator without Render Shell access:
 3. In GitHub, run **Actions** → **Run Production Database Migrations**. Wait
    for it to succeed; it creates the durable one-time setup state. The workflow
    uses the configured Supabase secrets and does not require Render Shell.
-4. Open `https://<your-render-service>/admin/setup`, enter the setup key, and
+4. Open `https://<your-render-service>/admin/login`. When setup is enabled, this
+   existing page displays the first-account form; enter the setup key and
    create the new administrator using a unique email address and a password of
    at least 12 characters. The form is unavailable unless the key is
    configured, no administrator exists, and setup has not already completed.
-   It never promotes an existing customer.
+   It never promotes an existing customer. No separate registration page or
+   route is created.
 5. Remove `ADMIN_SETUP_KEY` from Render and allow the service to redeploy.
    Setup is also permanently closed by the database completion marker. Sign in
    at `/admin/login`.

@@ -10,7 +10,7 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    public function show(): View|RedirectResponse
+    public function show(FirstAdminSetupController $firstAdminSetup): View|RedirectResponse
     {
         $admin = Auth::guard('admin')->user();
 
@@ -18,11 +18,17 @@ class AuthController extends Controller
             return to_route('admin.dashboard');
         }
 
-        return view('admin.auth.login');
+        return view('admin.auth.login', [
+            'setupAvailable' => $firstAdminSetup->isSetupAvailable(),
+        ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, FirstAdminSetupController $firstAdminSetup): RedirectResponse
     {
+        if ($request->exists('name') || $request->exists('setup_key')) {
+            return $firstAdminSetup->store($request);
+        }
+
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
