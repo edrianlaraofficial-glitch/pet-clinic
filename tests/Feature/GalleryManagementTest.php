@@ -98,6 +98,11 @@ class GalleryManagementTest extends TestCase
 
         $this->assertDatabaseMissing('gallery_images', ['id' => $galleryImage->id]);
         Storage::disk('public')->assertMissing('gallery/dog.jpg');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertDontSee('A happy dog')
+            ->assertSee('Photos of our clinic and its lovely visitors will be here soon.');
     }
 
     public function test_admin_gallery_rejects_non_image_uploads(): void
