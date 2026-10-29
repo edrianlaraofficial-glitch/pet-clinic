@@ -65,6 +65,8 @@ class GalleryManagementTest extends TestCase
             ->assertOk()
             ->assertSee('A happy dog at the clinic')
             ->assertSee('A lovely clinic visit')
+            ->assertSee('class="gallery-card-description"', false)
+            ->assertSee('tabindex="0"', false)
             ->assertSee(Storage::disk('public')->url($galleryImage->path), false)
             ->assertSee('data-gallery-carousel', false)
             ->assertSee('aria-label="Clinic photo gallery"', false)

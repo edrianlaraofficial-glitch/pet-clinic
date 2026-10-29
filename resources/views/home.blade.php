@@ -98,11 +98,11 @@
             <div class="gallery-carousel" data-gallery-carousel>
                 <div class="gallery-grid" id="clinic-gallery" data-gallery-track role="region" aria-label="Clinic photo gallery" tabindex="0">
                     @foreach ($galleryImages as $galleryImage)
-                        <figure class="gallery-card" data-scroll-reveal>
+                        <figure class="gallery-card" data-scroll-reveal tabindex="0">
                             <img src="{{ Storage::disk('public')->url($galleryImage->path) }}" alt="{{ $galleryImage->alt_text }}">
                             <span class="gallery-card-index" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
-                            <figcaption>
-                                <span class="gallery-card-eyebrow">Wade-County moments</span>
+                            <figcaption class="gallery-card-description">
+                                <span class="gallery-card-eyebrow">Photo description</span>
                                 <strong>{{ $galleryImage->caption ?: $galleryImage->alt_text }}</strong>
                             </figcaption>
                         </figure>
