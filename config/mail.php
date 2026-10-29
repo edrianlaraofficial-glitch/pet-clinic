@@ -1,3 +1,4 @@
+```php
 <?php
 
 return [
@@ -13,10 +14,16 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
         ],
+
+        'resend' => [
+            'transport' => 'resend',
+        ],
+
         'log' => [
             'transport' => 'log',
             'channel' => env('MAIL_LOG_CHANNEL'),
         ],
+
         'array' => [
             'transport' => 'array',
         ],
@@ -27,3 +34,4 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Wade-County Animal Clinic'),
     ],
 ];
+```
