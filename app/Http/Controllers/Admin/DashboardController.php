@@ -58,7 +58,7 @@ class DashboardController extends Controller
         });
         $todayAppointments = Appointment::query()
             ->whereBetween('starts_at', [$todayFrom, $todayTo])
-            ->where('status', '!=', Appointment::CANCELLED);
+            ->whereIn('status', Appointment::ACTIVE_STATUSES);
         $todayVisits = (clone $todayAppointments)->count();
         $needsConfirmation = (clone $todayAppointments)
             ->where('status', Appointment::PENDING)

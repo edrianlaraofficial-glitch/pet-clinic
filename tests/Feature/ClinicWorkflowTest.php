@@ -435,6 +435,46 @@ class ClinicWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_admin_dashboard_cards_count_active_statuses_within_their_time_periods(): void
+    {
+        $this->travelTo('2026-10-29 10:00:00');
+        $admin = $this->customer('dashboard-stats-admin@example.test');
+        $admin->grantRole(UserRole::ADMIN);
+        $customer = $this->customer('dashboard-stats-customer@example.test');
+        $pet = $customer->pets()->create(['name' => 'Mochi']);
+        $service = $this->service();
+        $createAppointment = function (string $startsAt, string $status) use ($customer, $pet, $service): Appointment {
+            $start = CarbonImmutable::parse($startsAt, config('app.timezone'));
+
+            return Appointment::query()->create([
+                'user_id' => $customer->getKey(),
+                'pet_id' => $pet->getKey(),
+                'service_id' => $service->getKey(),
+                'starts_at' => $start,
+                'ends_at' => $start->addMinutes(30),
+                'status' => $status,
+            ]);
+        };
+
+        $createAppointment('2026-10-29 09:00', Appointment::PENDING);
+        $createAppointment('2026-10-29 10:00', Appointment::CONFIRMED);
+        $createAppointment('2026-10-29 11:00', Appointment::COMPLETED);
+        $createAppointment('2026-10-29 12:00', Appointment::NO_SHOW);
+        $createAppointment('2026-10-29 13:00', Appointment::CANCELLED);
+        $createAppointment('2026-10-26 09:00', Appointment::COMPLETED);
+        $createAppointment('2026-10-25 09:00', Appointment::NO_SHOW);
+        $createAppointment('2026-11-02 09:00', Appointment::COMPLETED);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('<span class="admin-stat-label">Today’s bookings</span><strong>2</strong><small>Active appointments</small>', false)
+            ->assertSee('<span class="admin-stat-label">Pending confirmation</span><strong>1</strong><small>Awaiting your review</small>', false)
+            ->assertSee('<span class="admin-stat-label">Confirmed today</span><strong>1</strong><small>Ready for their visit</small>', false)
+            ->assertSee('<span class="admin-stat-label">Completed this week</span><strong>2</strong><small>Appointments completed</small>', false)
+            ->assertSee('<span class="admin-stat-label">No-shows this week</span><strong>1</strong><small>Track follow-up if needed</small>', false);
+    }
+
     public function test_admin_can_add_and_deactivate_a_service(): void
     {
         $admin = $this->customer('service-admin@example.test');
