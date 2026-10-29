@@ -58,8 +58,38 @@ class SettingsController extends Controller
 
         return view('admin.hours', [
             'hours' => $hours,
+            'hasIncompleteSchedule' => collect(range(0, 6))
+                ->contains(fn (int $weekday): bool => ! $savedHours->has($weekday)),
             'exceptions' => BusinessHourException::query()->orderBy('date')->get(),
         ]);
+    }
+
+    public function storeHours(): RedirectResponse
+    {
+        $timestamp = now();
+        $hours = collect(range(0, 6))
+            ->map(function (int $weekday) use ($timestamp): array {
+                $isClosed = $weekday === 0;
+
+                return [
+                    'weekday' => $weekday,
+                    'is_closed' => $isClosed,
+                    'opens_at' => $isClosed ? null : '09:00:00',
+                    'closes_at' => $isClosed ? null : '18:00:00',
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ];
+            })
+            ->all();
+
+        $createdDays = BusinessHour::query()->insertOrIgnore($hours);
+
+        return to_route('admin.hours.index')->with(
+            'status',
+            $createdDays > 0
+                ? 'The weekly schedule was created. Existing days were kept unchanged.'
+                : 'The weekly schedule is already complete.',
+        );
     }
 
     public function storeException(Request $request): RedirectResponse

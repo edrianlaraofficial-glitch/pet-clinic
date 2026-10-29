@@ -116,6 +116,7 @@ class AdminSectionsTest extends TestCase
             ->assertDontSee('Add a service')
             ->assertDontSee('Change password');
 
+        $response->assertDontSee('Create weekly schedule');
         $this->assertMatchesRegularExpression(
             '/<input(?=[^>]*id="opens-0")(?=[^>]*disabled)[^>]*>/',
             $response->getContent(),
@@ -145,6 +146,8 @@ class AdminSectionsTest extends TestCase
             ->assertSee('name="hours[0][is_closed]"', false)
             ->assertSee('name="hours[1][opens_at]"', false)
             ->assertSee('value="09:00"', false)
-            ->assertSee('name="hours[6][closes_at]"', false);
+            ->assertSee('name="hours[6][closes_at]"', false)
+            ->assertSee('Create weekly schedule')
+            ->assertSee('action="'.route('admin.hours.store').'"', false);
     }
 }

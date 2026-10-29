@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Appointment;
+use App\Models\BusinessHour;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\UserRole;
@@ -311,6 +312,74 @@ class ClinicWorkflowTest extends TestCase
             'is_closed' => 0,
             'opens_at' => '08:30:00',
             'closes_at' => '17:00:00',
+        ]);
+    }
+
+    public function test_admin_can_create_the_default_weekly_schedule_from_an_empty_state(): void
+    {
+        $admin = $this->customer('default-hours-admin@example.test');
+        $admin->grantRole(UserRole::ADMIN);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.hours.store'))
+            ->assertRedirect(route('admin.hours.index'))
+            ->assertSessionHas('status', 'The weekly schedule was created. Existing days were kept unchanged.');
+
+        $this->assertDatabaseCount('business_hours', 7);
+        $this->assertDatabaseHas('business_hours', [
+            'weekday' => 0,
+            'is_closed' => 1,
+            'opens_at' => null,
+            'closes_at' => null,
+        ]);
+        $this->assertDatabaseHas('business_hours', [
+            'weekday' => 1,
+            'is_closed' => 0,
+            'opens_at' => '09:00:00',
+            'closes_at' => '18:00:00',
+        ]);
+
+        $this->post(route('admin.hours.store'))
+            ->assertRedirect(route('admin.hours.index'))
+            ->assertSessionHas('status', 'The weekly schedule is already complete.');
+
+        $this->assertDatabaseCount('business_hours', 7);
+    }
+
+    public function test_admin_can_create_missing_weekly_hours_without_overwriting_saved_days(): void
+    {
+        $admin = $this->customer('create-hours-admin@example.test');
+        $admin->grantRole(UserRole::ADMIN);
+        $savedDay = BusinessHour::query()->create([
+            'weekday' => 1,
+            'is_closed' => false,
+            'opens_at' => '08:00:00',
+            'closes_at' => '16:00:00',
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.hours.store'))
+            ->assertRedirect(route('admin.hours.index'))
+            ->assertSessionHas('status', 'The weekly schedule was created. Existing days were kept unchanged.');
+
+        $this->assertDatabaseCount('business_hours', 7);
+        $this->assertDatabaseHas('business_hours', [
+            'id' => $savedDay->getKey(),
+            'weekday' => 1,
+            'opens_at' => '08:00:00',
+            'closes_at' => '16:00:00',
+        ]);
+        $this->assertDatabaseHas('business_hours', [
+            'weekday' => 0,
+            'is_closed' => 1,
+            'opens_at' => null,
+            'closes_at' => null,
+        ]);
+        $this->assertDatabaseHas('business_hours', [
+            'weekday' => 2,
+            'is_closed' => 0,
+            'opens_at' => '09:00:00',
+            'closes_at' => '18:00:00',
         ]);
     }
 

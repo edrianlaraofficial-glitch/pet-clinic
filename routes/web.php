@@ -92,6 +92,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/settings', [AdminSettings::class, 'redirectLegacySettings'])->name('settings');
         Route::get('/services', [AdminSettings::class, 'services'])->name('services.index');
         Route::get('/opening-hours', [AdminSettings::class, 'hours'])->name('hours.index');
+        Route::post('/opening-hours', [AdminSettings::class, 'storeHours'])->name('hours.store');
         Route::get('/account', [AdminSettings::class, 'account'])->name('account.index');
         Route::put('/account/profile', [AdminSettings::class, 'updateProfile'])
             ->middleware('throttle:6,1')

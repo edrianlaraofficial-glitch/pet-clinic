@@ -28,6 +28,14 @@
             </div>
         </div>
 
+        @if ($hasIncompleteSchedule)
+            <form method="POST" action="{{ route('admin.hours.store') }}" class="admin-hours-create-form admin-hours-actions">
+                @csrf
+                <p class="muted small admin-hours-hint">Create the seven weekday entries using the default schedule. Any days already configured will be preserved.</p>
+                <button class="btn btn-primary" type="submit">Create weekly schedule</button>
+            </form>
+        @endif
+
         <form method="POST" action="{{ route('admin.hours.update') }}" class="admin-hours-form" id="hours-form">
             @csrf
             @method('PUT')

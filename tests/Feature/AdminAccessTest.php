@@ -61,8 +61,14 @@ class AdminAccessTest extends TestCase
 
     public function test_customers_cannot_post_admin_actions(): void
     {
-        $this->actingAs($this->customer())
+        $customer = $this->customer();
+
+        $this->actingAs($customer)
             ->put(route('admin.hours.update'), ['hours' => []])
+            ->assertRedirect(route('admin.login'));
+
+        $this->actingAs($customer)
+            ->post(route('admin.hours.store'))
             ->assertRedirect(route('admin.login'));
     }
 
