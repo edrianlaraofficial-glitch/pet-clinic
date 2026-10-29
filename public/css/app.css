@@ -1195,12 +1195,13 @@ th { background: var(--cream-deep); }
 .admin-date-controls { display: flex; align-items: center; justify-content: end; gap: .45rem; flex-wrap: wrap; }
 .admin-date-controls .btn { min-height: 38px; }
 .admin-date-label { min-width: 100px; text-align: center; font-size: .86rem; font-weight: 900; }
-.admin-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .9rem; margin-bottom: 1.1rem; }
+.admin-stat-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.1rem; }
 .admin-stat-card { display: flex; min-width: 0; align-items: center; gap: .8rem; padding: 1rem; border: 1px solid var(--border); border-radius: 19px; background: var(--surface); box-shadow: var(--shadow); }
 .admin-stat-icon { display: grid; width: 46px; height: 46px; flex: 0 0 auto; place-items: center; border-radius: 15px; font-size: 1.25rem; font-weight: 900; }
 .admin-stat-paw { background: var(--teal-soft); color: var(--teal-deep); }
 .admin-stat-clock { background: var(--warning-soft); color: #94720f; }
 .admin-stat-check { background: var(--success-soft); color: var(--success); }
+.admin-stat-completed { background: #dceef8; color: #18749a; }
 .admin-stat-alert { background: var(--coral-soft); color: var(--coral-deep); }
 .admin-stat-card > div { display: grid; min-width: 0; }
 .admin-stat-label { color: var(--muted); font-size: .69rem; font-weight: 900; letter-spacing: .04em; line-height: 1.3; text-transform: uppercase; }
@@ -1234,6 +1235,39 @@ th { background: var(--cream-deep); }
 .admin-notice-card p:last-child { margin: 0; color: var(--ink); font-size: .86rem; }
 .admin-chair-summary { margin-bottom: .65rem; font-size: .86rem; }
 .admin-chair-summary strong { color: var(--teal-deep); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+.admin-date-picker { display: flex; min-height: 42px; align-items: center; gap: .25rem; padding: .2rem .35rem; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); }
+.admin-date-picker input { width: 150px; padding: .4rem .3rem; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: .75rem; font-weight: 800; }
+.admin-date-picker input:focus { outline: none; }
+.admin-date-picker:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 16%, transparent); }
+.admin-date-step { display: grid; width: 28px; height: 30px; place-items: center; border-radius: 8px; color: var(--muted); font-size: 1.35rem; line-height: 1; }
+.admin-date-step:hover { background: var(--teal-soft); color: var(--teal-deep); text-decoration: none; }
+.admin-appointments-tools { display: flex; align-items: center; justify-content: flex-end; gap: .65rem; }
+.admin-appointment-search { display: flex; min-width: min(250px, 30vw); min-height: 40px; align-items: center; gap: .45rem; padding: 0 .65rem; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); color: var(--muted); }
+.admin-appointment-search:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 15%, transparent); }
+.admin-appointment-search svg { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.8; }
+.admin-appointment-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: .72rem; }
+.admin-appointment-search input::placeholder { color: var(--muted); opacity: 1; }
+.admin-search-empty { margin: 0; padding: 1rem; color: var(--muted); font-size: .85rem; text-align: center; }
+.admin-table [data-appointment-row][hidden] { display: none; }
+.admin-week-chart { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: end; gap: .4rem; padding: .6rem .1rem .25rem; border-bottom: 1px solid var(--border); }
+.admin-week-chart-day { display: grid; min-width: 0; justify-items: center; gap: .25rem; }
+.admin-week-chart-count { min-height: 1.1em; color: var(--muted); font-size: .62rem; font-weight: 800; }
+.admin-week-chart-column { display: flex; width: min(100%, 28px); height: 112px; flex-direction: column-reverse; justify-content: flex-start; overflow: hidden; border-radius: 7px 7px 2px 2px; background: var(--cream-deep); }
+.admin-week-chart-column > span { display: block; width: 100%; flex: 0 0 auto; }
+.admin-week-chart-scheduled { background: #75b9a4; }
+.admin-week-chart-completed { background: var(--teal-deep); }
+.admin-week-chart-label { color: var(--muted); font-size: .63rem; font-weight: 750; }
+.admin-week-chart-legend { display: flex; flex-wrap: wrap; gap: .8rem; padding: .7rem 0; color: var(--muted); font-size: .68rem; }
+.admin-week-chart-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+.admin-week-chart-legend i { width: 8px; height: 8px; border-radius: 50%; }
+.admin-week-chart-legend i.scheduled { background: #75b9a4; }
+.admin-week-chart-legend i.completed { background: var(--teal-deep); }
+.admin-week-summary { display: flex; align-items: center; gap: .65rem; padding: .75rem; border-radius: 13px; background: var(--teal-soft); }
+.admin-week-summary-icon { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--teal) 22%, var(--surface)); color: var(--teal-deep); font-weight: 900; }
+.admin-week-summary > div { display: grid; gap: .1rem; }
+.admin-week-summary strong { color: var(--teal-deep); font-size: 1.2rem; line-height: 1.1; }
+.admin-week-summary > div > span { color: var(--muted); font-size: .67rem; }
 
 .admin-service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; gap: 1rem; }
 .admin-service-grid .admin-panel + .admin-panel { margin-top: 0; }
@@ -1728,7 +1762,7 @@ th { background: var(--cream-deep); }
   .admin-shell { grid-template-columns: 230px minmax(0, 1fr); }
   .admin-rail { padding-inline: .8rem; }
   .admin-container { width: min(1480px, 100% - 2rem); }
-  .admin-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .admin-dashboard-grid { grid-template-columns: 1fr; }
   .admin-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -1750,14 +1784,17 @@ th { background: var(--cream-deep); }
   .admin-topbar { min-height: 60px; padding-inline: 1rem; }
   .admin-main { padding-top: 1.25rem; }
   .admin-page-heading, .admin-dashboard-heading { align-items: flex-start; flex-direction: column; }
-  .admin-date-controls { justify-content: flex-start; }
-  .admin-stat-grid { gap: .55rem; }
+  .admin-date-controls { width: 100%; justify-content: flex-start; }
+  .admin-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
   .admin-stat-card { align-items: flex-start; flex-direction: column; gap: .45rem; padding: .75rem; }
   .admin-stat-icon { width: 38px; height: 38px; border-radius: 12px; }
   .admin-stat-label { min-height: 2.2em; font-size: .61rem; }
   .admin-stat-card strong { font-size: 1.35rem; }
   .admin-stat-card small { font-size: .65rem; }
   .admin-sidebar { grid-template-columns: 1fr; }
+  .admin-appointments-heading { align-items: stretch; flex-direction: column; }
+  .admin-appointments-tools { justify-content: space-between; }
+  .admin-appointment-search { min-width: 0; flex: 1; }
   .admin-panel { padding: .85rem; }
   .admin-table { min-width: 800px; }
   .gallery-upload-form { grid-template-columns: 1fr; }
@@ -1772,6 +1809,17 @@ th { background: var(--cream-deep); }
   .admin-hours-table tbody th, .admin-hours-closed { font-size: .72rem; }
   .admin-hours-closed { gap: .2rem; }
   .admin-hours-table .admin-hours-time input { padding: .45rem .2rem; font-size: .72rem; }
+}
+@media (max-width: 420px) {
+  .admin-date-controls { gap: .35rem; }
+  .admin-date-picker { flex: 1 1 100%; justify-content: space-between; }
+  .admin-date-picker input { width: auto; flex: 1; }
+  .admin-today-link { flex: 1; }
+  .admin-stat-card { padding: .65rem; }
+  .admin-stat-icon { width: 34px; height: 34px; }
+  .admin-appointments-tools { align-items: stretch; flex-direction: column; }
+  .admin-appointments-tools .admin-count-pill { align-self: flex-start; }
+  .admin-week-chart-column { height: 90px; }
 }
 @media (max-width: 560px) {
   .admin-topbar-status { display: none; }

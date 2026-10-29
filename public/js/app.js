@@ -124,6 +124,33 @@
         });
     }
 
+    const appointmentSearch = document.querySelector('[data-appointment-search]');
+    const appointmentRows = [...document.querySelectorAll('[data-appointment-row]')];
+    const appointmentSearchEmpty = document.querySelector('[data-appointment-search-empty]');
+
+    appointmentSearch?.addEventListener('input', () => {
+        const searchTerm = appointmentSearch.value.trim().toLocaleLowerCase();
+        let visibleAppointments = 0;
+
+        appointmentRows.forEach((row) => {
+            const matches = row.dataset.search.includes(searchTerm);
+            row.hidden = ! matches;
+
+            if (matches) {
+                visibleAppointments += 1;
+            }
+        });
+
+        if (appointmentSearchEmpty) {
+            appointmentSearchEmpty.hidden = visibleAppointments > 0 || appointmentRows.length === 0;
+        }
+    });
+
+    const dashboardDateForm = document.querySelector('#dashboard-date-form');
+    const dashboardDateInput = document.querySelector('#dashboard-date');
+
+    dashboardDateInput?.addEventListener('change', () => dashboardDateForm?.requestSubmit());
+
     const revealItems = document.querySelectorAll('[data-scroll-reveal]');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

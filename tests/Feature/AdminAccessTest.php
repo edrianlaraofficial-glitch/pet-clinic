@@ -92,12 +92,23 @@ class AdminAccessTest extends TestCase
         $this->get('/admin')
             ->assertOk()
             ->assertSee(route('admin.gallery.index'), false)
+            ->assertSee('id="dashboard-date"', false)
+            ->assertSee('data-appointment-search', false)
+            ->assertSee('Booking overview')
+            ->assertSee('Scheduled')
+            ->assertSee('Completed')
+            ->assertSee('Confirmed today')
+            ->assertSee('name="range" value="day"', false)
+            ->assertSee('data-appointment-search-empty', false)
             ->assertHeader('Cache-Control', 'must-revalidate, no-cache, no-store, private')
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertDontSee('Weekly schedule');
         $this->get(route('admin.gallery.index'))->assertOk();
+        $this->get(route('admin.dashboard', ['range' => 'week', 'date' => '2026-10-29']))
+            ->assertOk()
+            ->assertSee('Appointments · Week of Oct 26');
         $this->get('/admin/settings')->assertRedirect(route('admin.services.index'));
         $this->get(route('admin.settings', ['section' => 'hours']))->assertRedirect(route('admin.hours.index'));
         $this->get(route('admin.settings', ['section' => 'account']))->assertRedirect(route('admin.account.index'));

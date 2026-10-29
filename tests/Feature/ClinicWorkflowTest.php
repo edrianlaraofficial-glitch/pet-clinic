@@ -408,6 +408,33 @@ class ClinicWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_admin_dashboard_shows_live_appointment_search_and_weekly_counts(): void
+    {
+        $this->travelTo('2026-10-26 10:00:00');
+        $this->seed(BusinessHourSeeder::class);
+        $admin = $this->customer('dashboard-admin@example.test');
+        $admin->grantRole(UserRole::ADMIN);
+        $customer = $this->customer('dashboard-customer@example.test');
+        $pet = $customer->pets()->create(['name' => 'Mochi']);
+        $appointment = app(AppointmentBooker::class)->book(
+            $customer,
+            $pet,
+            $this->service(),
+            CarbonImmutable::parse('2026-10-26 11:00', config('app.timezone')),
+        );
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-search="clinic customer mochi checkup"', false)
+            ->assertSee('Monday Oct 26: 1 scheduled, 0 completed');
+
+        $this->assertDatabaseHas('appointments', [
+            'id' => $appointment->getKey(),
+            'status' => Appointment::PENDING,
+        ]);
+    }
+
     public function test_admin_can_add_and_deactivate_a_service(): void
     {
         $admin = $this->customer('service-admin@example.test');

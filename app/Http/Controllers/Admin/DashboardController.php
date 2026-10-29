@@ -40,12 +40,31 @@ class DashboardController extends Controller
         $todayTo = $today->endOfDay();
         $weekFrom = $today->startOfWeek(CarbonImmutable::MONDAY);
         $weekTo = $today->endOfWeek(CarbonImmutable::SUNDAY);
+        $weeklyAppointments = Appointment::query()
+            ->whereBetween('starts_at', [$weekFrom, $weekTo])
+            ->where('status', '!=', Appointment::CANCELLED)
+            ->get(['starts_at', 'status']);
+        $weeklyOverview = collect(range(0, 6))->map(function (int $dayOffset) use ($weekFrom, $weeklyAppointments): array {
+            $date = $weekFrom->addDays($dayOffset);
+            $appointmentsForDay = $weeklyAppointments->filter(
+                fn (Appointment $appointment): bool => $appointment->starts_at->isSameDay($date),
+            );
+
+            return [
+                'date' => $date,
+                'scheduled' => $appointmentsForDay->whereIn('status', Appointment::ACTIVE_STATUSES)->count(),
+                'completed' => $appointmentsForDay->where('status', Appointment::COMPLETED)->count(),
+            ];
+        });
         $todayAppointments = Appointment::query()
             ->whereBetween('starts_at', [$todayFrom, $todayTo])
             ->where('status', '!=', Appointment::CANCELLED);
         $todayVisits = (clone $todayAppointments)->count();
         $needsConfirmation = (clone $todayAppointments)
             ->where('status', Appointment::PENDING)
+            ->count();
+        $confirmedToday = (clone $todayAppointments)
+            ->where('status', Appointment::CONFIRMED)
             ->count();
         $todayBookedMinutes = (clone $todayAppointments)
             ->get(['starts_at', 'ends_at'])
@@ -64,6 +83,9 @@ class DashboardController extends Controller
             },
             'todayVisits' => $todayVisits,
             'needsConfirmation' => $needsConfirmation,
+            'confirmedToday' => $confirmedToday,
+            'weeklyOverview' => $weeklyOverview,
+            'weeklyOverviewMax' => max(1, $weeklyOverview->max(fn (array $day): int => $day['scheduled'] + $day['completed'])),
             'completedThisWeek' => Appointment::query()
                 ->whereBetween('starts_at', [$weekFrom, $weekTo])
                 ->where('status', Appointment::COMPLETED)
