@@ -5,18 +5,20 @@
     <section class="card" style="max-width:620px;margin-inline:auto">
         <p class="step-label">One more step</p>
         <h1>Check your inbox</h1>
-        <p>We've sent a confirmation link to <strong>{{ auth()->user()->email }}</strong>. Click it to start booking appointments.</p>
+        <p>Enter the email address you used to register. If your account still needs verification, we’ll send a fresh confirmation link.</p>
         <p class="muted small">Can't find it? Check your spam folder, or ask us to send it again.</p>
 
-        <div class="row" style="margin-top:1.25rem">
-            <form method="POST" action="{{ route('verification.send') }}">
-                @csrf
+        <form method="POST" action="{{ route('verification.send') }}" style="margin-top:1.25rem">
+            @csrf
+            <div class="field">
+                <label for="verification-email">Email address</label>
+                <input id="verification-email" type="email" name="email" value="{{ old('email', $email) }}" autocomplete="email" required>
+                @error('email') <span class="field-error">{{ $message }}</span> @enderror
+            </div>
+            <div class="row">
                 <button class="btn btn-primary" type="submit">Resend confirmation email</button>
-            </form>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button class="btn btn-ghost" type="submit">Sign out</button>
-            </form>
-        </div>
+                <a class="btn btn-ghost" href="{{ route('login') }}">Back to sign in</a>
+            </div>
+        </form>
     </section>
 @endsection

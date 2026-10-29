@@ -269,12 +269,16 @@ class AdminAccessTest extends TestCase
         $this->assertFalse(User::where('email', 'sneaky@example.test')->first()->isAdmin());
     }
 
-    public function test_unverified_customers_can_use_customer_features(): void
+    public function test_unverified_customers_are_redirected_to_email_verification(): void
     {
         $unverified = User::create([
             'name' => 'New', 'email' => 'new@example.test', 'password' => bcrypt('password'),
         ]);
 
-        $this->actingAs($unverified)->get('/book')->assertOk();
+        $this->actingAs($unverified)
+            ->get('/book')
+            ->assertRedirect(route('verification.notice'));
+
+        $this->get(route('verification.notice'))->assertOk();
     }
 }

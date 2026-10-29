@@ -39,12 +39,13 @@ Route::middleware('guest')->group(function () {
 | Legacy signed email confirmation links
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth')->group(function () {
-    Route::get('/email/verify', [AuthController::class, 'verifyNotice'])->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
-});
+Route::get('/email/verify', [AuthController::class, 'verifyNotice'])->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
+Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
+    ->middleware('throttle:6,1')
+    ->name('verification.send');
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
@@ -53,7 +54,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 | Customer area (signed in)
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/my-pets', [PetController::class, 'index'])->name('pets.index');
     Route::post('/my-pets', [PetController::class, 'store'])->name('pets.store');
     Route::get('/my-pets/{pet}/edit', [PetController::class, 'edit'])->name('pets.edit');

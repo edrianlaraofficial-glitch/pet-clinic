@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AuthController extends Controller
 {
@@ -77,7 +78,9 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember')) || Auth::user()?->isAdmin()) {
+        $user = User::query()->where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password) || $user->isAdmin()) {
             Auth::logout();
 
             return back()
@@ -85,6 +88,12 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
+        if (! $user->hasVerifiedEmail()) {
+            return to_route('verification.notice', ['email' => $user->email])
+                ->withErrors(['email' => 'Please verify your email address before signing in.']);
+        }
+
+        Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         return redirect()->intended(route('home'));
@@ -116,23 +125,53 @@ class AuthController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-        $request->session()->regenerate();
+        if (! $this->sendVerificationNotification($user)) {
+            return to_route('verification.notice', ['email' => $user->email])
+                ->withErrors(['email' => 'We could not send your verification email. Check the email settings and try again.']);
+        }
 
-        return redirect()->route('home')
-            ->with('status', 'Your account is ready. You can book an appointment now.');
+        return to_route('verification.notice', ['email' => $user->email])
+            ->with('status', 'Your account was created. Check your email for a verification link before signing in.');
     }
 
-    public function verify(EmailVerificationRequest $request): RedirectResponse
+    public function verify(int $id, string $hash): RedirectResponse
     {
-        $request->fulfill();
+        $user = User::query()->findOrFail($id);
 
-        return redirect()->route('home')->with('status', 'Your email address has been verified.');
+        abort_unless(
+            ! $user->isAdmin() && hash_equals(sha1($user->getEmailForVerification()), $hash),
+            403,
+        );
+
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+            event(new Verified($user));
+        }
+
+        return to_route('login')->with('status', 'Your email address has been verified. You can now sign in.');
     }
 
-    public function verifyNotice(): RedirectResponse
+    public function verifyNotice(Request $request): View
     {
-        return redirect()->route('home');
+        return view('auth.verify', [
+            'email' => $request->query('email'),
+        ]);
+    }
+
+    public function resendVerificationEmail(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+        $user = User::query()->where('email', $validated['email'])->first();
+
+        if ($user && ! $user->isAdmin() && ! $user->hasVerifiedEmail() && ! $this->sendVerificationNotification($user)) {
+            return back()
+                ->withInput()
+                ->withErrors(['email' => 'We could not send your verification email. Check the email settings and try again.']);
+        }
+
+        return back()->with('status', 'If an unverified customer account exists for that address, a verification email has been sent.');
     }
 
     public function logout(Request $request): RedirectResponse
@@ -142,5 +181,18 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('home');
+    }
+
+    private function sendVerificationNotification(User $user): bool
+    {
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (TransportExceptionInterface $exception) {
+            report($exception);
+
+            return false;
+        }
+
+        return true;
     }
 }

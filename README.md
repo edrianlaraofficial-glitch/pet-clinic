@@ -2,7 +2,7 @@
 
 A Laravel 13 booking website for a dog veterinary clinic, built with Blade.
 
-- Customers can register without email verification, manage their dogs, and book,
+- Customers must verify their email before signing in, then manage their dogs and book,
   cancel, or reschedule appointments.
 - Administrators can manage appointments, services, opening hours, customers,
   clinic details, and gallery images.
@@ -190,11 +190,38 @@ The HTTP middleware trusts only the immediate proxy (`REMOTE_ADDR`) for
 forwarded host or client-IP headers, so generated asset URLs use HTTPS without
 accepting a client-supplied hostname.
 
-Customer email verification is disabled. To deliver password resets and
-administrator email-change verification, configure a real mail provider in
-Render (`MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
-`MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`, and `MAIL_FROM_NAME`).
-The local `log` mailer does not deliver email.
+Customer email verification and administrator email-change verification use
+Laravel's signed verification links. Set `APP_URL` to the canonical HTTPS URL of
+the Render service so generated links point to the deployed website. For the
+current Render hostname, set `APP_URL=https://pet-clinic-f1v4.onrender.com`.
+
+### Gmail SMTP email delivery
+
+For local development, set these values in the ignored local `.env` file. Add
+the same names as protected environment variables in Render:
+
+```dotenv
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-clinic-gmail-address@gmail.com
+MAIL_PASSWORD=your-google-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=your-clinic-gmail-address@gmail.com
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+In Google Account security settings, enable 2-Step Verification, then create an
+App Password for the clinic mail account at
+<https://myaccount.google.com/apppasswords>. Put that App Password in
+`MAIL_PASSWORD`, not the regular Gmail password. Store it only in local `.env`
+or Render's environment/secret settings; never commit it or expose it in
+frontend variables. `MAIL_FROM_ADDRESS` should be the Gmail account used for
+SMTP (or a sender alias authorized by that account). The `.env.example` file
+contains empty placeholders, not real credentials.
+
+If delivery fails, the customer account is retained but remains unverified; the
+verification screen reports the delivery problem and allows another request.
 
 ### Uploaded gallery images
 

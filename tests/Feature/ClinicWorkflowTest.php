@@ -10,19 +10,22 @@ use App\Models\UserRole;
 use App\Services\AppointmentBooker;
 use Carbon\CarbonImmutable;
 use Database\Seeders\BusinessHourSeeder;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Contracts\Notifications\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 class ClinicWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_creates_a_customer_without_email_verification(): void
+    public function test_registration_sends_verification_email_without_authenticating_customer(): void
     {
         Notification::fake();
-        config(['app.require_admin_email_verification' => true]);
 
         $response = $this->post(route('auth.register'), [
             'name' => 'Sam Rivera',
@@ -33,18 +36,32 @@ class ClinicWorkflowTest extends TestCase
             'role' => UserRole::ADMIN,
         ]);
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('verification.notice', ['email' => 'sam@example.test']))
+            ->assertSessionHas('status', 'Your account was created. Check your email for a verification link before signing in.');
 
         $user = User::query()->where('email', 'sam@example.test')->firstOrFail();
         $this->assertSame('Sam Rivera', $user->profile->full_name);
         $this->assertSame('555-0100', $user->profile->phone);
         $this->assertFalse($user->isAdmin());
         $this->assertNull($user->email_verified_at);
-        $this->assertAuthenticatedAs($user, 'web');
-        Notification::assertNothingSent();
+        $this->assertGuest('web');
+        $verificationUrl = null;
+        Notification::assertSentTo($user, VerifyEmail::class, function (VerifyEmail $notification) use ($user, &$verificationUrl): bool {
+            $verificationUrl = $notification->toMail($user)->actionUrl;
 
-        $this->get(route('booking.create'))->assertOk();
-        $this->get(route('verification.notice'))->assertRedirect(route('home'));
+            return true;
+        });
+        $this->assertSame(
+            parse_url(config('app.url'), PHP_URL_HOST),
+            parse_url($verificationUrl, PHP_URL_HOST),
+        );
+        $this->assertTrue(URL::hasValidSignature(Request::create($verificationUrl)));
+
+        $this->get(route('verification.notice', ['email' => $user->email]))
+            ->assertOk()
+            ->assertSee('Check your inbox')
+            ->assertSee($user->email)
+            ->assertSee(route('verification.send'), false);
     }
 
     public function test_registration_uses_a_generic_error_for_an_existing_email(): void
@@ -83,14 +100,101 @@ class ClinicWorkflowTest extends TestCase
             ],
         );
 
-        $this->actingAs($user)->get($url)->assertRedirect(route('home'));
+        $this->get($url)
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status', 'Your email address has been verified. You can now sign in.');
 
         $this->assertNotNull($user->fresh()->email_verified_at);
+        $this->assertGuest('web');
+    }
+
+    public function test_unverified_customer_cannot_sign_in_and_can_request_another_verification_email(): void
+    {
+        Notification::fake();
+        $customer = $this->customer('unverified-login@example.test', false);
+
+        $this->from(route('login'))
+            ->post(route('auth.login'), [
+                'email' => $customer->email,
+                'password' => 'password',
+            ])
+            ->assertRedirect(route('verification.notice', ['email' => $customer->email]))
+            ->assertSessionHasErrors([
+                'email' => 'Please verify your email address before signing in.',
+            ]);
+
+        $this->assertGuest('web');
+
+        $this->post(route('verification.send'), ['email' => $customer->email])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'If an unverified customer account exists for that address, a verification email has been sent.');
+
+        Notification::assertSentTo($customer, VerifyEmail::class);
+    }
+
+    public function test_registration_keeps_unverified_account_and_reports_smtp_delivery_failure(): void
+    {
+        $this->mock(Dispatcher::class)
+            ->shouldReceive('send')
+            ->once()
+            ->andThrow(new TransportException('SMTP unavailable'));
+
+        $this->post(route('auth.register'), [
+            'name' => 'Sam Rivera',
+            'email' => 'delivery-failure@example.test',
+            'phone' => '555-0100',
+            'password' => 'password-123',
+            'password_confirmation' => 'password-123',
+        ])
+            ->assertRedirect(route('verification.notice', ['email' => 'delivery-failure@example.test']))
+            ->assertSessionHasErrors([
+                'email' => 'We could not send your verification email. Check the email settings and try again.',
+            ]);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'delivery-failure@example.test',
+            'email_verified_at' => null,
+        ]);
+        $this->assertGuest('web');
+    }
+
+    public function test_invalid_signed_customer_verification_link_does_not_verify_email(): void
+    {
+        $customer = $this->customer('invalid-verify@example.test', false);
+        $url = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            [
+                'id' => $customer->getKey(),
+                'hash' => sha1('different@example.test'),
+            ],
+        );
+
+        $this->get($url)->assertForbidden();
+
+        $this->assertNull($customer->fresh()->email_verified_at);
+    }
+
+    public function test_verification_resend_does_not_disclose_unknown_or_admin_accounts(): void
+    {
+        Notification::fake();
+        $admin = $this->customer('verification-admin@example.test', false);
+        $admin->grantRole(UserRole::ADMIN);
+
+        $this->post(route('verification.send'), ['email' => 'unknown-verification@example.test'])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'If an unverified customer account exists for that address, a verification email has been sent.');
+
+        $this->post(route('verification.send'), ['email' => $admin->email])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'If an unverified customer account exists for that address, a verification email has been sent.');
+
+        Notification::assertNothingSent();
     }
 
     public function test_customer_can_sign_in_and_sign_out(): void
     {
-        $customer = $this->customer('login@example.test', false);
+        $customer = $this->customer('login@example.test');
 
         $this->post(route('auth.login'), [
             'email' => $customer->email,
