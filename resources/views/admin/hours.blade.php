@@ -35,11 +35,12 @@
             <div class="admin-hours-grid" role="list" aria-label="Days of the week">
                 @foreach ($hours as $hour)
                     <?php
+                        $isClosed = (bool) old("hours.{$hour->weekday}.is_closed", $hour->is_closed);
                         $isToday = $hour->weekday === now()->dayOfWeek;
                         $isWeekend = in_array($hour->weekday, [0, 6]);
-                        $hasHours = !$hour->is_closed && $hour->opens_at && $hour->closes_at;
+                        $hasHours = !$isClosed && $hour->opens_at && $hour->closes_at;
                     ?>
-                    <article class="admin-day-card {{ $hour->is_closed ? 'is-closed' : '' }} {{ $isToday ? 'is-today' : '' }} {{ $isWeekend ? 'is-weekend' : '' }}" role="listitem" data-weekday="{{ $hour->weekday }}">
+                    <article class="admin-day-card {{ $isClosed ? 'is-closed' : '' }} {{ $isToday ? 'is-today' : '' }} {{ $isWeekend ? 'is-weekend' : '' }}" role="listitem" data-weekday="{{ $hour->weekday }}">
                         <div class="admin-day-header">
                             <div class="admin-day-info">
                                 <h3 class="admin-day-name">{{ $hour->dayName() }}</h3>
@@ -51,15 +52,18 @@
                                 @endif
                             </div>
                             <label class="admin-day-toggle" for="closed-{{ $hour->weekday }}">
+                                <input type="hidden"
+                                    name="hours[{{ $hour->weekday }}][is_closed]"
+                                    value="0">
                                 <input type="checkbox"
                                     id="closed-{{ $hour->weekday }}"
                                     name="hours[{{ $hour->weekday }}][is_closed]"
                                     value="1"
-                                    @checked(old("hours.{$hour->weekday}.is_closed", $hour->is_closed))
+                                    @checked($isClosed)
                                     class="admin-toggle-input"
                                     aria-label="{{ $hour->dayName() }} closed">
                                 <span class="admin-toggle-slider" aria-hidden="true"></span>
-                                <span class="admin-toggle-label">{{ $hour->is_closed ? 'Closed' : 'Open' }}</span>
+                                <span class="admin-toggle-label">{{ $isClosed ? 'Closed' : 'Open' }}</span>
                             </label>
                         </div>
 
@@ -77,7 +81,8 @@
                                         class="admin-time-input"
                                         aria-label="{{ $hour->dayName() }} opening time"
                                         placeholder="HH:MM"
-                                        required>
+                                        @required(!$isClosed)
+                                        @disabled($isClosed)>
                                 </div>
                                 <span class="admin-time-hint" aria-hidden="true">e.g. 9:00 AM</span>
                             </div>
@@ -99,7 +104,8 @@
                                         class="admin-time-input"
                                         aria-label="{{ $hour->dayName() }} closing time"
                                         placeholder="HH:MM"
-                                        required>
+                                        @required(!$isClosed)
+                                        @disabled($isClosed)>
                                 </div>
                                 <span class="admin-time-hint" aria-hidden="true">e.g. 6:00 PM</span>
                             </div>
@@ -338,10 +344,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Toggle closed/open state
     dayCards.forEach(card => {
         const checkbox = card.querySelector('.admin-toggle-input');
+        const timeInputs = card.querySelectorAll('.admin-time-input');
+
+        const syncTimeInputs = () => {
+            timeInputs.forEach(input => {
+                input.disabled = checkbox.checked;
+                input.required = !checkbox.checked;
+            });
+        };
+
+        syncTimeInputs();
 
         checkbox.addEventListener('change', function() {
             const isClosed = this.checked;
             card.classList.toggle('is-closed', isClosed);
+            syncTimeInputs();
 
             // Update toggle label
             const label = card.querySelector('.admin-toggle-label');

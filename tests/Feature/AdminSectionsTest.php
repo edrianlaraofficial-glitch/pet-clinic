@@ -105,7 +105,7 @@ class AdminSectionsTest extends TestCase
         ]);
         $admin->grantRole(UserRole::ADMIN);
 
-        $this->actingAs($admin, 'admin')
+        $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.hours.index'))
             ->assertOk()
             ->assertSee('Sunday')
@@ -115,5 +115,36 @@ class AdminSectionsTest extends TestCase
             ->assertSee('name="hours[6][closes_at]"', false)
             ->assertDontSee('Add a service')
             ->assertDontSee('Change password');
+
+        $this->assertMatchesRegularExpression(
+            '/<input(?=[^>]*id="opens-0")(?=[^>]*disabled)[^>]*>/',
+            $response->getContent(),
+        );
+        $this->assertMatchesRegularExpression(
+            '/<input(?=[^>]*id="opens-1")(?=[^>]*required)(?![^>]*disabled)[^>]*>/',
+            $response->getContent(),
+        );
+    }
+
+    public function test_opening_hours_page_displays_controls_when_no_schedule_has_been_saved(): void
+    {
+        $admin = User::query()->create([
+            'name' => 'Clinic Admin',
+            'email' => 'admin@example.test',
+            'password' => 'current-password',
+            'email_verified_at' => now(),
+        ]);
+        $admin->grantRole(UserRole::ADMIN);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.hours.index'))
+            ->assertOk()
+            ->assertSee('Sunday')
+            ->assertSee('Monday')
+            ->assertSee('Saturday')
+            ->assertSee('name="hours[0][is_closed]"', false)
+            ->assertSee('name="hours[1][opens_at]"', false)
+            ->assertSee('value="09:00"', false)
+            ->assertSee('name="hours[6][closes_at]"', false);
     }
 }

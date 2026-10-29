@@ -38,8 +38,26 @@ class SettingsController extends Controller
 
     public function hours(): View
     {
+        $savedHours = BusinessHour::query()->get()->keyBy('weekday');
+        $hours = collect(range(0, 6))->map(function (int $weekday) use ($savedHours): BusinessHour {
+            $hour = $savedHours->get($weekday);
+
+            if ($hour instanceof BusinessHour) {
+                return $hour;
+            }
+
+            $isClosed = $weekday === 0;
+
+            return new BusinessHour([
+                'weekday' => $weekday,
+                'is_closed' => $isClosed,
+                'opens_at' => $isClosed ? null : '09:00:00',
+                'closes_at' => $isClosed ? null : '18:00:00',
+            ]);
+        });
+
         return view('admin.hours', [
-            'hours' => BusinessHour::query()->orderBy('weekday')->get(),
+            'hours' => $hours,
             'exceptions' => BusinessHourException::query()->orderBy('date')->get(),
         ]);
     }

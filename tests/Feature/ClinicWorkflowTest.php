@@ -279,6 +279,41 @@ class ClinicWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_a_weekly_schedule_when_no_hours_exist_yet(): void
+    {
+        $admin = $this->customer('empty-hours-admin@example.test');
+        $admin->grantRole(UserRole::ADMIN);
+
+        $this->actingAs($admin, 'admin')
+            ->put(route('admin.hours.update'), [
+                'hours' => [
+                    0 => ['is_closed' => '1'],
+                    1 => ['opens_at' => '08:30', 'closes_at' => '17:00'],
+                    2 => ['opens_at' => '09:00', 'closes_at' => '18:00'],
+                    3 => ['opens_at' => '09:00', 'closes_at' => '18:00'],
+                    4 => ['opens_at' => '09:00', 'closes_at' => '18:00'],
+                    5 => ['opens_at' => '09:00', 'closes_at' => '18:00'],
+                    6 => ['opens_at' => '09:00', 'closes_at' => '18:00'],
+                ],
+            ])
+            ->assertRedirect(route('admin.hours.index'))
+            ->assertSessionHas('status', 'Opening hours were updated.');
+
+        $this->assertDatabaseCount('business_hours', 7);
+        $this->assertDatabaseHas('business_hours', [
+            'weekday' => 0,
+            'is_closed' => 1,
+            'opens_at' => null,
+            'closes_at' => null,
+        ]);
+        $this->assertDatabaseHas('business_hours', [
+            'weekday' => 1,
+            'is_closed' => 0,
+            'opens_at' => '08:30:00',
+            'closes_at' => '17:00:00',
+        ]);
+    }
+
     public function test_admin_can_confirm_a_pending_appointment(): void
     {
         $this->seed(BusinessHourSeeder::class);
