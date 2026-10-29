@@ -12,6 +12,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
     APP_ENV=production \
     APP_DEBUG=false \
+    DB_CONNECTION=pgsql \
     LOG_CHANNEL=stderr
 
 RUN sed -ri \
@@ -25,7 +26,7 @@ RUN sed -ri \
 
 WORKDIR /var/www/html
 
-COPY . .
+COPY composer.json composer.lock ./
 
 RUN composer install \
     --no-dev \
@@ -33,6 +34,15 @@ RUN composer install \
     --prefer-dist \
     --no-progress \
     --optimize-autoloader \
+    --no-scripts \
+    --no-autoloader
+
+COPY . .
+
+RUN composer dump-autoload \
+    --no-dev \
+    --no-interaction \
+    --optimize \
     && mkdir -p storage/app/public \
                 storage/framework/cache/data \
                 storage/framework/sessions \
@@ -52,7 +62,6 @@ RUN npm ci --no-audit --no-fund
 COPY resources ./resources
 COPY vite.config.js ./
 COPY --from=app /var/www/html/vendor/laravel/framework/src/Illuminate/Pagination/resources/views ./vendor/laravel/framework/src/Illuminate/Pagination/resources/views
-COPY --from=app /var/www/html/storage/framework/views ./storage/framework/views
 RUN npm run build
 
 FROM app AS runtime

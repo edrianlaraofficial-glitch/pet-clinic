@@ -76,4 +76,23 @@ class AdminSeederTest extends TestCase
         $this->assertTrue(Hash::check('existing-password', $admin->fresh()->password));
         $this->assertDatabaseCount('user_roles', 1);
     }
+
+    public function test_seed_does_not_create_another_admin_when_an_admin_exists(): void
+    {
+        config([
+            'app.admin_seed.email' => 'new-seed-admin@example.test',
+            'app.admin_seed.password' => 'new-seed-password',
+        ]);
+        $existingAdmin = User::query()->create([
+            'name' => 'Existing administrator',
+            'email' => 'existing-admin@example.test',
+            'password' => Hash::make('existing-password'),
+        ]);
+        $existingAdmin->grantRole(UserRole::ADMIN);
+
+        $this->seed(AdminSeeder::class);
+
+        $this->assertDatabaseMissing('users', ['email' => 'new-seed-admin@example.test']);
+        $this->assertDatabaseCount('user_roles', 1);
+    }
 }

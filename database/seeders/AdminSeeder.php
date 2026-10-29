@@ -20,6 +20,12 @@ class AdminSeeder extends Seeder
         $email = config('app.admin_seed.email');
         $password = config('app.admin_seed.password');
 
+        if (UserRole::query()->where('role', UserRole::ADMIN)->exists()) {
+            $this->command?->warn('Skipping admin seed: an administrator already exists. Use clinic:make-admin to grant access explicitly.');
+
+            return;
+        }
+
         if (! $email || ! $password) {
             $this->command?->warn('Skipping admin seed: set ADMIN_EMAIL and ADMIN_PASSWORD, or run clinic:make-admin.');
 

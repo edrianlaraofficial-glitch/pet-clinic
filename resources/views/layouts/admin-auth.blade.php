@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <title>@yield('title', 'Admin sign in') · Wade-County</title>
+    @fonts
+    @vite('resources/css/app.css')
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
 <body class="admin-auth-body">

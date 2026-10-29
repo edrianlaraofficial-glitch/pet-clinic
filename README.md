@@ -37,9 +37,11 @@ npm run build
 php artisan serve
 ```
 
-Open <http://localhost:8000>. The committed `public/css` and `public/js` assets
-are used by the application layouts; Vite assets are built for the welcome view
-and any Vite-based pages.
+Open <http://localhost:8000>. The application layouts load the Tailwind CSS v4
+production bundle from Vite alongside the existing `public/css/app.css` design
+stylesheet and `public/js/app.js` interactions. This keeps the current customer
+and admin experience intact while making Tailwind available throughout the
+application. The welcome view also uses Vite.
 
 ## Accounts and authorization
 
@@ -56,13 +58,15 @@ To create the first administrator safely:
 3. Sign in at `/admin/login`.
 
 The command only grants the role to an existing account and does not change its
-password. Do not put an administrator password in source control or seed
-production with credentials.
+password. The optional `AdminSeeder` can create the initial admin only while no
+admin role exists; later runs skip setup. Do not put an administrator password
+in source control or seed production with credentials.
 
 ## Database and Supabase PostgreSQL
 
-Local development defaults to SQLite. Production should use PostgreSQL through
-Render environment variables; never copy a developer's SQLite database into the
+Local development defaults to SQLite. Production defaults to PostgreSQL even
+if `DB_CONNECTION` is omitted; set Supabase connection values through Render
+environment variables and never copy a developer's SQLite database into the
 deployment.
 
 In the Supabase Dashboard, open **Connect** and copy the connection details for
@@ -203,5 +207,6 @@ production rollout.
 - `app/Services/`: booking availability and overlap protection
 - `database/migrations/` and `database/seeders/`: schema and initial clinic data
 - `resources/views/`: customer, admin, and public Blade templates
+- `resources/css/app.css`: Tailwind CSS v4 input and theme tokens
 - `public/css/app.css` and `public/js/app.js`: application styles and behavior
 - `tests/Feature/`: authentication, booking, admin access, and workflow tests
