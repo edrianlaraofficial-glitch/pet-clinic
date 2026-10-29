@@ -60,7 +60,7 @@ To securely create the first administrator without Render Shell access:
 3. In GitHub, run **Actions** → **Run Production Database Migrations**. Wait
    for it to succeed; it creates the durable one-time setup state. The workflow
    uses the configured Supabase secrets and does not require Render Shell.
-4. Open `https://<your-render-service>/admin/login`. When setup is enabled, this
+4. Open `https://<your-render-service>/trentopetclinic/login`. When setup is enabled, this
    existing page displays the first-account form; enter the setup key and
    create the new administrator using a unique email address and a password of
    at least 12 characters. The form is unavailable unless the key is
@@ -69,7 +69,7 @@ To securely create the first administrator without Render Shell access:
    route is created.
 5. Remove `ADMIN_SETUP_KEY` from Render and allow the service to redeploy.
    Setup is also permanently closed by the database completion marker. Sign in
-   at `/admin/login`.
+   at `/trentopetclinic/login`.
 
 The setup key is never included in the URL, is compared securely, and its
 submission is rate-limited. Requests use a PostgreSQL-backed lock to prevent

@@ -33,7 +33,13 @@ class AdminAccessTest extends TestCase
 
     public function test_guests_are_sent_to_the_separate_admin_login(): void
     {
+        $this->assertSame('/trentopetclinic/login', parse_url(route('admin.login'), PHP_URL_PATH));
+        $this->assertSame('/trentopetclinic/login', parse_url(route('admin.login.store'), PHP_URL_PATH));
+        $this->assertSame('/auth', parse_url(route('login'), PHP_URL_PATH));
+
         $this->get(route('admin.login'))->assertOk();
+        $this->get('/admin/login')->assertRedirect(route('admin.login'));
+        $this->post('/admin/login')->assertRedirect(route('admin.login'));
         $this->get('/admin')->assertRedirect(route('admin.login'));
         $this->get('/admin/settings')->assertRedirect(route('admin.login'));
         $this->get(route('admin.customers.index'))->assertRedirect(route('admin.login'));

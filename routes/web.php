@@ -74,9 +74,13 @@ Route::middleware('auth')->group(function () {
 | Admin (separate session guard; unauthorized sessions are hidden)
 |--------------------------------------------------------------------------
 */
+Route::get('/trentopetclinic/login', [AdminAuth::class, 'show'])->name('admin.login');
+Route::post('/trentopetclinic/login', [AdminAuth::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('admin.login.store');
+Route::redirect('/admin/login', '/trentopetclinic/login');
+
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/login', [AdminAuth::class, 'show'])->name('login');
-    Route::post('/login', [AdminAuth::class, 'store'])->middleware('throttle:6,1')->name('login.store');
     Route::get('/email/verify/{id}/{hash}', [AdminSettings::class, 'verifyEmail'])
         ->middleware(['signed', 'throttle:6,1'])
         ->name('email.verify');
