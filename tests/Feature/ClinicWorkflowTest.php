@@ -9,7 +9,6 @@ use App\Models\UserRole;
 use App\Services\AppointmentBooker;
 use Carbon\CarbonImmutable;
 use Database\Seeders\BusinessHourSeeder;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
@@ -19,9 +18,10 @@ class ClinicWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_creates_a_customer_profile_and_sends_verification_email(): void
+    public function test_registration_creates_a_customer_without_email_verification(): void
     {
         Notification::fake();
+        config(['app.require_admin_email_verification' => true]);
 
         $response = $this->post(route('auth.register'), [
             'name' => 'Sam Rivera',
@@ -32,32 +32,13 @@ class ClinicWorkflowTest extends TestCase
             'role' => UserRole::ADMIN,
         ]);
 
-        $response->assertRedirect(route('verification.notice'));
+        $response->assertRedirect(route('home'));
 
         $user = User::query()->where('email', 'sam@example.test')->firstOrFail();
         $this->assertSame('Sam Rivera', $user->profile->full_name);
         $this->assertSame('555-0100', $user->profile->phone);
         $this->assertFalse($user->isAdmin());
-        Notification::assertSentTo($user, VerifyEmail::class);
-    }
-
-    public function test_local_registration_skips_email_verification_and_allows_booking(): void
-    {
-        config(['app.require_email_verification' => false]);
-        Notification::fake();
-
-        $response = $this->post(route('auth.register'), [
-            'name' => 'Local Customer',
-            'email' => 'local@example.test',
-            'phone' => '555-0101',
-            'password' => 'password-123',
-            'password_confirmation' => 'password-123',
-        ]);
-
-        $response->assertRedirect(route('home'));
-
-        $user = User::query()->where('email', 'local@example.test')->firstOrFail();
-        $this->assertNotNull($user->email_verified_at);
+        $this->assertNull($user->email_verified_at);
         $this->assertAuthenticatedAs($user, 'web');
         Notification::assertNothingSent();
 
@@ -108,7 +89,7 @@ class ClinicWorkflowTest extends TestCase
 
     public function test_customer_can_sign_in_and_sign_out(): void
     {
-        $customer = $this->customer('login@example.test');
+        $customer = $this->customer('login@example.test', false);
 
         $this->post(route('auth.login'), [
             'email' => $customer->email,

@@ -147,7 +147,7 @@ class AdminAccessTest extends TestCase
 
     public function test_local_admin_can_sign_in_without_email_verification(): void
     {
-        config(['app.require_email_verification' => false]);
+        config(['app.require_admin_email_verification' => false]);
         $admin = User::create([
             'name' => 'Local Admin',
             'email' => 'local-admin@example.test',
@@ -246,12 +246,12 @@ class AdminAccessTest extends TestCase
         $this->assertFalse(User::where('email', 'sneaky@example.test')->first()->isAdmin());
     }
 
-    public function test_booking_requires_confirmed_email(): void
+    public function test_unverified_customers_can_use_customer_features(): void
     {
         $unverified = User::create([
             'name' => 'New', 'email' => 'new@example.test', 'password' => bcrypt('password'),
         ]);
 
-        $this->actingAs($unverified)->get('/book')->assertRedirect(route('verification.notice'));
+        $this->actingAs($unverified)->get('/book')->assertOk();
     }
 }

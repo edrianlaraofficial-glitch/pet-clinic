@@ -2,7 +2,7 @@
 
 A Laravel 13 booking website for a dog veterinary clinic, built with Blade.
 
-- Customers can register, verify their email, manage their dogs, and book,
+- Customers can register without email verification, manage their dogs, and book,
   cancel, or reschedule appointments.
 - Administrators can manage appointments, services, opening hours, customers,
   clinic details, and gallery images.
@@ -45,22 +45,41 @@ application. The welcome view also uses Vite.
 
 ## Accounts and authorization
 
-Customer registration never accepts a role. Admin routes use a separate guard
-and check the admin role on the server. Ordinary users cannot grant themselves
-admin access by editing a form or request.
+Customer registration never accepts a role and does not require email
+verification. Admin routes use a separate guard and check the admin role on the
+server. Ordinary users cannot grant themselves admin access by editing a form
+or request.
 
-To create the first administrator safely:
+To securely create the first administrator without Render Shell access:
 
-1. Register a customer account through the site and verify its email.
-2. In the Render service Shell, run
-   `php artisan clinic:make-admin admin@example.com`, replacing the email with
-   the account you verified.
-3. Sign in at `/admin/login`.
+1. Generate a temporary, high-entropy setup key in a trusted local shell:
+   `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. Do not commit the key
+   or place it in a URL.
+2. Set `ADMIN_SETUP_KEY` to that value in the Render service environment, then
+   deploy the application code.
+3. In GitHub, run **Actions** → **Run Production Database Migrations**. Wait
+   for it to succeed; it creates the durable one-time setup state. The workflow
+   uses the configured Supabase secrets and does not require Render Shell.
+4. Open `https://<your-render-service>/admin/setup`, enter the setup key, and
+   create the new administrator using a unique email address and a password of
+   at least 12 characters. The form is unavailable unless the key is
+   configured, no administrator exists, and setup has not already completed.
+   It never promotes an existing customer.
+5. Remove `ADMIN_SETUP_KEY` from Render and allow the service to redeploy.
+   Setup is also permanently closed by the database completion marker. Sign in
+   at `/admin/login`.
 
-The command only grants the role to an existing account and does not change its
-password. The optional `AdminSeeder` can create the initial admin only while no
-admin role exists; later runs skip setup. Do not put an administrator password
-in source control or seed production with credentials.
+The setup key is never included in the URL, is compared securely, and its
+submission is rate-limited. Requests use a PostgreSQL-backed lock to prevent
+simultaneous initial-admin creation. The first admin is signed in immediately.
+
+For a later administrator, trusted repository collaborators can use the
+private **Grant Clinic Admin Access** GitHub Actions workflow to grant the role
+to an existing verified account. That workflow requires the repository secrets
+`APP_KEY`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and
+`DB_PASSWORD`; restrict workflow access to trusted collaborators. It does not
+change the account password. Do not put administrator credentials in source
+control or seed production with credentials.
 
 ## Database and Supabase PostgreSQL
 
@@ -128,15 +147,13 @@ settings.
 4. Configure the environment variables listed below in Render. Keep `APP_DEBUG`
    false, use a real generated `APP_KEY`, and set the exact public service URL
    as `APP_URL`.
-5. Deploy. In the Render Shell, run `php artisan migrate --force`, then run
-   `php artisan db:seed --class=ServiceSeeder --force` and
-   `php artisan db:seed --class=BusinessHourSeeder --force` once to add the
-   sample services and hours. Do not run these seeders again after editing
-   clinic data; they update the seeded records.
-6. Register and verify the intended admin account, then grant it the admin
-   role with `php artisan clinic:make-admin admin@example.com` in the Render
-   Shell.
-7. Test the home page, registration, email verification, booking, and `/admin`.
+5. Deploy the application. Then run the GitHub Actions **Run Production
+   Database Migrations** workflow and wait for success before using routes
+   that depend on the new schema.
+6. Follow the temporary-key first-admin procedure above. Configure clinic
+   services and opening hours from the admin pages, or seed them through a
+   separately reviewed, controlled database task.
+7. Test the home page, registration, booking, password reset, and `/admin`.
    Check Render runtime logs if a request fails; do not enable public debug
    output.
 
@@ -163,12 +180,16 @@ Required:
 | `QUEUE_CONNECTION=sync` | Avoids queuing work without a running worker |
 | `FILESYSTEM_DISK=public` | Stores gallery images on the public disk |
 
+Set `ADMIN_SETUP_KEY` only for first-admin setup. It must be a random value of
+at least 32 characters and should be removed from Render after setup.
+
 The HTTP middleware trusts only the immediate proxy (`REMOTE_ADDR`) for
 `X-Forwarded-Proto`, which Render uses when terminating HTTPS. It does not trust
 forwarded host or client-IP headers, so generated asset URLs use HTTPS without
 accepting a client-supplied hostname.
 
-For email verification and password resets, configure a real mail provider in
+Customer email verification is disabled. To deliver password resets and
+administrator email-change verification, configure a real mail provider in
 Render (`MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
 `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`, and `MAIL_FROM_NAME`).
 The local `log` mailer does not deliver email.
@@ -208,7 +229,7 @@ production rollout.
 
 - `app/Http/Controllers/` and `routes/web.php`: customer, admin, and public
   requests
-- `app/Http/Middleware/`: admin, email-verification, and security headers
+- `app/Http/Middleware/`: admin access and security headers
 - `app/Services/`: booking availability and overlap protection
 - `database/migrations/` and `database/seeders/`: schema and initial clinic data
 - `resources/views/`: customer, admin, and public Blade templates

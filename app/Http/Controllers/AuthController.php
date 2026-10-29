@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -107,7 +106,6 @@ class AuthController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
-                'email_verified_at' => config('app.require_email_verification') ? null : now(),
             ]);
 
             $user->profile()->create([
@@ -118,20 +116,11 @@ class AuthController extends Controller
             return $user;
         });
 
-        if (config('app.require_email_verification')) {
-            event(new Registered($user));
-        }
-
         Auth::login($user);
         $request->session()->regenerate();
 
-        if (! config('app.require_email_verification')) {
-            return redirect()->route('home')
-                ->with('status', 'Your account is ready. You can book an appointment now.');
-        }
-
-        return redirect()->route('verification.notice')
-            ->with('status', 'Your account was created. Please confirm your email before booking.');
+        return redirect()->route('home')
+            ->with('status', 'Your account is ready. You can book an appointment now.');
     }
 
     public function verify(EmailVerificationRequest $request): RedirectResponse
@@ -141,24 +130,9 @@ class AuthController extends Controller
         return redirect()->route('home')->with('status', 'Your email address has been verified.');
     }
 
-    public function verifyNotice(): View|RedirectResponse
+    public function verifyNotice(): RedirectResponse
     {
-        if (! config('app.require_email_verification')) {
-            return redirect()->route('home');
-        }
-
-        return view('auth.verify');
-    }
-
-    public function resend(Request $request): RedirectResponse
-    {
-        if (! config('app.require_email_verification') || $request->user()->hasVerifiedEmail()) {
-            return redirect()->route('home');
-        }
-
-        $request->user()->sendEmailVerificationNotification();
-
-        return back()->with('status', 'A new confirmation link has been sent to your email address.');
+        return redirect()->route('home');
     }
 
     public function logout(Request $request): RedirectResponse

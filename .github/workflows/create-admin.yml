@@ -1,0 +1,46 @@
+name: Grant Clinic Admin Access
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Email address of the registered and verified customer account
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  grant-admin:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, intl, zip, pdo_pgsql
+          tools: composer
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Grant admin access to the verified account
+        env:
+          APP_ENV: production
+          APP_DEBUG: 'false'
+          APP_KEY: ${{ secrets.APP_KEY }}
+          DB_CONNECTION: pgsql
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_SSLMODE: require
+          ADMIN_EMAIL: ${{ inputs.email }}
+        run: php artisan clinic:make-admin "$ADMIN_EMAIL"

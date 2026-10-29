@@ -22,7 +22,7 @@ class EnsureAdmin
             $response = redirect()->guest(route('admin.login'));
         } else {
             abort_unless(
-                $admin->isAdmin() && (! config('app.require_email_verification') || $admin->hasVerifiedEmail()),
+                $admin->isAdmin() && (! config('app.require_admin_email_verification') || $admin->hasVerifiedEmail()),
                 404,
             );
             $response = $next($request);

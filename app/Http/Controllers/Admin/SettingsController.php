@@ -207,21 +207,21 @@ class SettingsController extends Controller
             if ($emailChanged) {
                 $admin->email = $validated['email'];
 
-                if (config('app.require_email_verification')) {
+                if (config('app.require_admin_email_verification')) {
                     $admin->email_verified_at = null;
                 }
             }
 
             $admin->save();
 
-            if ($emailChanged && config('app.require_email_verification')) {
+            if ($emailChanged && config('app.require_admin_email_verification')) {
                 $admin->sendEmailVerificationNotification();
             }
         });
 
         $request->session()->regenerate();
 
-        if ($emailChanged && config('app.require_email_verification')) {
+        if ($emailChanged && config('app.require_admin_email_verification')) {
             return to_route('admin.login')
                 ->with('status', 'Your email was updated. Verify the new address using the link we sent before signing in again.');
         }
