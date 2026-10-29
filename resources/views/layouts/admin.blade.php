@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <title>@yield('title', 'Admin') · Wade-County</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('admin-icon.svg') }}">
     @fonts
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
