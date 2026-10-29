@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Models\BusinessHour;
-use App\Models\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View as ViewInstance;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
+use Symfony\Component\Mailer\Transport\TransportInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +27,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $brevoTransport = static fn (array $config): TransportInterface => (new BrevoTransportFactory(client: HttpClient::create()))
+            ->create(Dsn::fromString($config['url']));
+
+        Mail::extend('brevo', $brevoTransport);
+        Mail::extend('brevo+api', $brevoTransport);
+
         View::composer('layouts.app', function (ViewInstance $view): void {
             $viewData = $view->getData();
             $footerHours = $viewData['hours'] ?? BusinessHour::query()
@@ -32,17 +40,6 @@ class AppServiceProvider extends ServiceProvider
                 ->get();
 
             $view->with('footerHours', $footerHours);
-        });
-
-        VerifyEmail::createUrlUsing(function (User $user): string {
-            return URL::temporarySignedRoute(
-                $user->isAdmin() ? 'admin.email.verify' : 'verification.verify',
-                now()->addMinutes(config('auth.verification.expire', 60)),
-                [
-                    'id' => $user->getKey(),
-                    'hash' => sha1($user->getEmailForVerification()),
-                ],
-            );
         });
     }
 }

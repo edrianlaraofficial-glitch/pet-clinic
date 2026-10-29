@@ -2,7 +2,7 @@
 
 A Laravel 13 booking website for a dog veterinary clinic, built with Blade.
 
-- Customers must verify their email before signing in, then manage their dogs and book,
+- Customers can sign in without email verification, then manage their dogs and book,
   cancel, or reschedule appointments.
 - Administrators can manage appointments, services, opening hours, customers,
   clinic details, and gallery images.
@@ -45,7 +45,9 @@ application. The welcome view also uses Vite.
 
 ## Accounts and authorization
 
-Customer registration never accepts a role and requires email verification.
+Customer registration never accepts a role. Email verification is currently
+disabled for both customer and administrator accounts; registration marks new
+accounts verified without sending a verification email.
 Admin routes use a separate guard and check the admin role on the server.
 Ordinary users cannot grant themselves admin access by editing a form or
 request.
@@ -77,7 +79,7 @@ simultaneous initial-admin creation. The first admin is signed in immediately.
 
 For a later administrator, trusted repository collaborators can use the
 private **Grant Clinic Admin Access** GitHub Actions workflow to grant the role
-to an existing verified account. That workflow requires the repository secrets
+to an existing account. That workflow requires the repository secrets
 `APP_KEY`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and
 `DB_PASSWORD`; restrict workflow access to trusted collaborators. It does not
 change the account password. Do not put administrator credentials in source
@@ -190,48 +192,31 @@ The HTTP middleware trusts only the immediate proxy (`REMOTE_ADDR`) for
 forwarded host or client-IP headers, so generated asset URLs use HTTPS without
 accepting a client-supplied hostname.
 
-Customer email verification and administrator email-change verification use
-Laravel's signed verification links. Set `APP_URL` to the canonical HTTPS URL of
-the Render service so generated links point to the deployed website. For the
-current Render hostname, set `APP_URL=https://pet-clinic-f1v4.onrender.com`.
+Set `APP_URL` to the canonical HTTPS URL of the Render service. For the current
+Render hostname, set `APP_URL=https://pet-clinic-f1v4.onrender.com`.
 
-### Email delivery through Gmail SMTP
+### Email delivery through Brevo
 
-Configure Gmail SMTP in the ignored local `.env` file and as protected
-environment variables in Render:
+The application uses Symfony's Brevo HTTP API transport through Laravel Mail.
+Set the following in the ignored local `.env` file and as protected environment
+variables in Render:
 
 ```dotenv
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your-gmail-address
-MAIL_PASSWORD=your-google-app-password
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=your-gmail-address
+MAIL_MAILER=brevo
+BREVO_DSN=brevo+api://<API_KEY>@default
+MAIL_FROM_ADDRESS=edrianlara.official@gmail.com
 MAIL_FROM_NAME="Wade-County Animal Clinic"
 ```
 
-Enable 2-Step Verification on the Google account, then create an App Password
-from the Google Account security settings. Use the App Password for
-`MAIL_PASSWORD`, not the account password. Keep it only in local `.env` or
-Render's protected environment settings; never commit it or expose it in
-frontend variables. Use the same Gmail address for `MAIL_USERNAME` and
-`MAIL_FROM_ADDRESS`.
+Create a Brevo API key and configure it only in local `.env` and Render's
+protected environment settings. Replace `<API_KEY>` with the key in those
+settings; never commit the real key or expose it in frontend variables. Verify
+the sender address in Brevo before sending. `BREVO_DSN` is consumed by Laravel's
+Brevo mailer extension and uses the HTTPS API rather than SMTP.
 
-Render Free web services block outbound SMTP ports 25, 465, and 587. Gmail SMTP
-therefore cannot deliver from a Free service. Confirm the Render service plan
-allows outbound SMTP before using these settings; otherwise choose an HTTPS
-email provider or a hosting plan that permits SMTP. Gmail variables alone do
-not select the transport, so `MAIL_MAILER=smtp` is required.
-
-Set Render's `APP_URL` to the canonical HTTPS URL of the deployed app so signed
-verification links use the production host. The application sends verification
-notifications synchronously, so a queue worker is not needed. If delivery
-fails, the account remains saved and unverified, the page allows a retry, and
-the application logs the sanitized transport exception class/message and
-non-secret SMTP connection settings. Check the Render runtime logs for that
-diagnostic; credentials, recipient addresses, and verification URLs are not
-logged.
+Email verification is temporarily disabled: registration does not send a
+verification message, and new customer accounts can sign in immediately.
+Password-reset email still uses the configured mail transport.
 
 ### Uploaded gallery images
 

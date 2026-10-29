@@ -14,7 +14,7 @@ class AuthController extends Controller
     {
         $admin = Auth::guard('admin')->user();
 
-        if ($admin?->isAdmin() && (! config('app.require_admin_email_verification') || $admin->hasVerifiedEmail())) {
+        if ($admin?->isAdmin()) {
             return to_route('admin.dashboard');
         }
 
@@ -38,8 +38,7 @@ class AuthController extends Controller
         $authenticated = $guard->attempt($credentials);
         $admin = $guard->user();
 
-        if (! $authenticated || ! $admin?->isAdmin()
-            || (config('app.require_admin_email_verification') && ! $admin->hasVerifiedEmail())) {
+        if (! $authenticated || ! $admin?->isAdmin()) {
             $guard->logout();
 
             return back()

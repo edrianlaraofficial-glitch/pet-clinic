@@ -4,10 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Models\UserRole;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AdminCredentialsTest extends TestCase
@@ -117,9 +115,8 @@ class AdminCredentialsTest extends TestCase
         $this->assertTrue(Hash::check('current-password', $admin->fresh()->password));
     }
 
-    public function test_admin_email_change_requires_verification_before_admin_access_resumes(): void
+    public function test_admin_email_change_does_not_require_email_verification(): void
     {
-        Notification::fake();
         $admin = $this->admin();
 
         $this->actingAs($admin, 'admin')
@@ -128,27 +125,12 @@ class AdminCredentialsTest extends TestCase
                 'email' => 'new-admin@example.test',
                 'current_password' => 'current-password',
             ])
-            ->assertRedirect(route('admin.login'))
-            ->assertSessionHas('status', 'Your email was updated. Verify the new address using the link we sent before signing in again.');
+            ->assertRedirect(route('admin.account.index'))
+            ->assertSessionHas('status', 'Your personal information was updated.');
 
         $updatedAdmin = $admin->fresh();
         $this->assertSame('new-admin@example.test', $updatedAdmin->email);
         $this->assertNull($updatedAdmin->email_verified_at);
-        $this->get(route('admin.dashboard'))->assertNotFound();
-
-        $verificationUrl = null;
-        Notification::assertSentTo($updatedAdmin, VerifyEmail::class, function (VerifyEmail $notification) use ($updatedAdmin, &$verificationUrl): bool {
-            $verificationUrl = $notification->toMail($updatedAdmin)->actionUrl;
-
-            return true;
-        });
-
-        $verificationPath = parse_url($verificationUrl, PHP_URL_PATH).'?'.parse_url($verificationUrl, PHP_URL_QUERY);
-        $this->get($verificationPath)
-            ->assertRedirect(route('admin.dashboard'))
-            ->assertSessionHas('status', 'Your admin email has been verified.');
-
-        $this->assertNotNull($updatedAdmin->fresh()->email_verified_at);
         $this->get(route('admin.dashboard'))->assertOk();
     }
 
@@ -196,7 +178,6 @@ class AdminCredentialsTest extends TestCase
             'email' => 'admin@example.test',
             'password' => 'current-password',
             'remember_token' => 'previous-remember-token',
-            'email_verified_at' => now(),
         ]);
         $admin->grantRole(UserRole::ADMIN);
 

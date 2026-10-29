@@ -4,18 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AuthController extends Controller
 {
@@ -89,11 +86,6 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
-        if (! $user->hasVerifiedEmail()) {
-            return to_route('verification.notice', ['email' => $user->email])
-                ->withErrors(['email' => 'Please verify your email address before signing in.']);
-        }
-
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
@@ -111,68 +103,22 @@ class AuthController extends Controller
             'email.unique' => 'We could not create an account with those details. Try signing in or resetting your password.',
         ]);
 
-        $user = DB::transaction(function () use ($validated): User {
+        DB::transaction(function () use ($validated): void {
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
+                'email_verified_at' => now(),
             ]);
 
             $user->profile()->create([
                 'full_name' => $validated['name'],
                 'phone' => $validated['phone'],
             ]);
-
-            return $user;
         });
 
-        if (! $this->sendVerificationNotification($user)) {
-            return to_route('verification.notice', ['email' => $user->email])
-                ->withErrors(['email' => 'We could not send your verification email. Please try again later or contact the clinic.']);
-        }
-
-        return to_route('verification.notice', ['email' => $user->email])
-            ->with('status', 'Your account was created. Check your email for a verification link before signing in.');
-    }
-
-    public function verify(int $id, string $hash): RedirectResponse
-    {
-        $user = User::query()->findOrFail($id);
-
-        abort_unless(
-            ! $user->isAdmin() && hash_equals(sha1($user->getEmailForVerification()), $hash),
-            403,
-        );
-
-        if (! $user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
-            event(new Verified($user));
-        }
-
-        return to_route('login')->with('status', 'Your email address has been verified. You can now sign in.');
-    }
-
-    public function verifyNotice(Request $request): View
-    {
-        return view('auth.verify', [
-            'email' => $request->query('email'),
-        ]);
-    }
-
-    public function resendVerificationEmail(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
-        ]);
-        $user = User::query()->where('email', $validated['email'])->first();
-
-        if ($user && ! $user->isAdmin() && ! $user->hasVerifiedEmail() && ! $this->sendVerificationNotification($user)) {
-            return back()
-                ->withInput()
-                ->withErrors(['email' => 'We could not send your verification email. Please try again later or contact the clinic.']);
-        }
-
-        return back()->with('status', 'If an unverified customer account exists for that address, a verification email has been sent.');
+        return to_route('login')
+            ->with('status', 'Your account was created. You can now sign in.');
     }
 
     public function logout(Request $request): RedirectResponse
@@ -182,49 +128,5 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('home');
-    }
-
-    private function sendVerificationNotification(User $user): bool
-    {
-        try {
-            $user->sendEmailVerificationNotification();
-        } catch (TransportExceptionInterface $exception) {
-            $mailer = (string) config('mail.default');
-            $mailerConfig = config("mail.mailers.{$mailer}", []);
-
-            Log::error('Verification email delivery failed.', [
-                'exception_class' => $exception::class,
-                'mailer' => $mailer,
-                'host' => $mailerConfig['host'] ?? null,
-                'port' => $mailerConfig['port'] ?? null,
-                'encryption' => $mailerConfig['encryption'] ?? null,
-                'message' => $this->sanitizeMailError($exception->getMessage()),
-            ]);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private function sanitizeMailError(string $message): string
-    {
-        $sensitiveValues = [
-            config('mail.mailers.smtp.username'),
-            config('mail.mailers.smtp.password'),
-        ];
-
-        foreach ($sensitiveValues as $sensitiveValue) {
-            if (is_string($sensitiveValue) && $sensitiveValue !== '') {
-                $message = str_replace($sensitiveValue, '[REDACTED]', $message);
-            }
-        }
-
-        $message = preg_replace('/https?:\/\/[^\s<>"\']+/i', '[URL REDACTED]', $message) ?? '[Mail error redacted]';
-        $message = preg_replace('/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/', '[EMAIL REDACTED]', $message) ?? '[Mail error redacted]';
-        $message = preg_replace('/\b[A-Za-z0-9+\/_=-]{24,}\b/', '[TOKEN REDACTED]', $message) ?? '[Mail error redacted]';
-        $message = preg_replace('/[\r\n\t]+/', ' ', $message) ?? '[Mail error redacted]';
-
-        return substr($message, 0, 500);
     }
 }

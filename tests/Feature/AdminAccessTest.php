@@ -148,29 +148,8 @@ class AdminAccessTest extends TestCase
         $this->get('/admin')->assertRedirect(route('admin.login'));
     }
 
-    public function test_unverified_admin_cannot_sign_in_when_verification_is_required(): void
+    public function test_unverified_admin_can_sign_in_and_access_admin_pages(): void
     {
-        $admin = User::create([
-            'name' => 'Unverified Admin',
-            'email' => 'unverified-admin@example.test',
-            'password' => 'password',
-        ]);
-        $admin->grantRole(UserRole::ADMIN);
-
-        $this->from(route('admin.login'))
-            ->post(route('admin.login.store'), [
-                'email' => $admin->email,
-                'password' => 'password',
-            ])
-            ->assertRedirect(route('admin.login'))
-            ->assertSessionHasErrors('email');
-
-        $this->assertGuest('admin');
-    }
-
-    public function test_local_admin_can_sign_in_without_email_verification(): void
-    {
-        config(['app.require_admin_email_verification' => false]);
         $admin = User::create([
             'name' => 'Local Admin',
             'email' => 'local-admin@example.test',
@@ -269,16 +248,14 @@ class AdminAccessTest extends TestCase
         $this->assertFalse(User::where('email', 'sneaky@example.test')->first()->isAdmin());
     }
 
-    public function test_unverified_customers_are_redirected_to_email_verification(): void
+    public function test_unverified_customers_can_access_customer_pages(): void
     {
         $unverified = User::create([
             'name' => 'New', 'email' => 'new@example.test', 'password' => bcrypt('password'),
         ]);
 
         $this->actingAs($unverified)
-            ->get('/book')
-            ->assertRedirect(route('verification.notice'));
-
-        $this->get(route('verification.notice'))->assertOk();
+            ->get(route('pets.index'))
+            ->assertOk();
     }
 }

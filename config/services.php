@@ -14,10 +14,6 @@ return [
     |
     */
 
-    'resend' => [
-        'key' => env('RESEND_API_KEY'),
-    ],
-
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

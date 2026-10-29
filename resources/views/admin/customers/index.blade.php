@@ -6,7 +6,7 @@
         <div>
             <p class="step-label">Clinic community</p>
             <h1>Customers</h1>
-            <p class="muted">Customer contact details are visible to verified admins only.</p>
+            <p class="muted">Customer contact details are visible to authorized administrators only.</p>
         </div>
         <span class="admin-count-pill">{{ $customers->total() }} {{ \Illuminate\Support\Str::plural('customer', $customers->total()) }}</span>
     </div>

@@ -17,7 +17,7 @@
         @else
             <p class="step-label">Private staff access</p>
             <h1>Admin sign in</h1>
-            <p class="muted">Use your verified administrator account to manage the clinic website.</p>
+            <p class="muted">Use your administrator account to manage the clinic website.</p>
         @endif
 
         @if (session('status'))

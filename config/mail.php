@@ -1,21 +1,12 @@
 <?php
 
 return [
-    'default' => env('MAIL_MAILER', 'smtp'),
+    'default' => env('MAIL_MAILER', 'brevo'),
 
     'mailers' => [
-        'smtp' => [
-            'transport' => 'smtp',
-            'host' => env('MAIL_HOST', 'smtp.gmail.com'),
-            'port' => env('MAIL_PORT', 587),
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
-        ],
-
-        'resend' => [
-            'transport' => 'resend',
+        'brevo' => [
+            'transport' => 'brevo',
+            'url' => env('BREVO_DSN'),
         ],
 
         'log' => [
@@ -29,7 +20,7 @@ return [
     ],
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'address' => env('MAIL_FROM_ADDRESS', 'edrianlara.official@gmail.com'),
         'name' => env('MAIL_FROM_NAME', 'Wade-County Animal Clinic'),
     ],
 ];

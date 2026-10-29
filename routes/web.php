@@ -34,19 +34,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:6,1')->name('password.update');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Legacy signed email confirmation links
-|--------------------------------------------------------------------------
-*/
-Route::get('/email/verify', [AuthController::class, 'verifyNotice'])->name('verification.notice');
-Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
-    ->middleware(['signed', 'throttle:6,1'])
-    ->name('verification.verify');
-Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
-    ->middleware('throttle:6,1')
-    ->name('verification.send');
-
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 /*
@@ -54,7 +41,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 | Customer area (signed in)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::get('/my-pets', [PetController::class, 'index'])->name('pets.index');
     Route::post('/my-pets', [PetController::class, 'store'])->name('pets.store');
     Route::get('/my-pets/{pet}/edit', [PetController::class, 'edit'])->name('pets.edit');
@@ -82,10 +69,6 @@ Route::post('/trentopetclinic/login', [AdminAuth::class, 'store'])
 Route::redirect('/admin/login', '/trentopetclinic/login');
 
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/email/verify/{id}/{hash}', [AdminSettings::class, 'verifyEmail'])
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('email.verify');
-
     Route::middleware('admin')->group(function () {
         Route::post('/logout', [AdminAuth::class, 'destroy'])->name('logout');
         Route::get('/', [AdminDashboard::class, 'index'])->name('dashboard');

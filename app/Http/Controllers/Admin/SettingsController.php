@@ -8,7 +8,6 @@ use App\Models\BusinessHourException;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -247,32 +246,14 @@ class SettingsController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($admin->getKey())],
             'current_password' => ['required', 'current_password:admin'],
         ]);
-        $emailChanged = $validated['email'] !== $admin->email;
-
-        DB::transaction(function () use ($admin, $validated, $emailChanged): void {
+        DB::transaction(function () use ($admin, $validated): void {
             $admin->name = $validated['name'];
-
-            if ($emailChanged) {
-                $admin->email = $validated['email'];
-
-                if (config('app.require_admin_email_verification')) {
-                    $admin->email_verified_at = null;
-                }
-            }
+            $admin->email = $validated['email'];
 
             $admin->save();
-
-            if ($emailChanged && config('app.require_admin_email_verification')) {
-                $admin->sendEmailVerificationNotification();
-            }
         });
 
         $request->session()->regenerate();
-
-        if ($emailChanged && config('app.require_admin_email_verification')) {
-            return to_route('admin.login')
-                ->with('status', 'Your email was updated. Verify the new address using the link we sent before signing in again.');
-        }
 
         return to_route('admin.account.index')->with('status', 'Your personal information was updated.');
     }
@@ -292,32 +273,6 @@ class SettingsController extends Controller
         $request->session()->regenerate();
 
         return to_route('admin.account.index')->with('status', 'Your admin password was updated.');
-    }
-
-    public function verifyEmail(string $id, string $hash): RedirectResponse
-    {
-        $admin = User::query()->findOrFail($id);
-        abort_unless(
-            $admin->isAdmin()
-                && hash_equals(sha1($admin->getEmailForVerification()), $hash),
-            403,
-        );
-
-        if (! $admin->hasVerifiedEmail()) {
-            $admin->markEmailAsVerified();
-            event(new Verified($admin));
-        }
-
-        $guard = Auth::guard('admin');
-        $authenticatedAdmin = $guard->user();
-
-        if ($authenticatedAdmin instanceof User && $authenticatedAdmin->isAdmin() && $authenticatedAdmin->is($admin)) {
-            $guard->setUser($admin);
-
-            return to_route('admin.dashboard')->with('status', 'Your admin email has been verified.');
-        }
-
-        return to_route('admin.login')->with('status', 'Your admin email has been verified. You can now sign in.');
     }
 
     private function serviceRules(?Service $service = null): array
